@@ -10,7 +10,11 @@
 import os
 import json
 
-def preprocess_vocab(transcript_path, vocab_path, reverse_vocab_path):
+def preprocess_vocab():
+    # 路径定义,不用/\是因为这样可以在Linux和Windows上通用
+    transcript_path = os.path.join('..', 'data', 'data_aishell', 'transcript', 'aishell_transcript_v0.8.txt')
+    vocab_path = os.path.join('..', 'data', 'data_aishell', 'preprocessed', 'vocab.json')
+    reverse_vocab_path = os.path.join('..', 'data', 'data_aishell', 'preprocessed', 'reverse_vocab.json')
     os.makedirs(os.path.dirname(vocab_path), exist_ok=True)
 
     # 初始化词汇表，前三个词分别对应 pad, bos, eos，因为是中文，词汇中不会出现这三个词
@@ -41,9 +45,4 @@ def preprocess_vocab(transcript_path, vocab_path, reverse_vocab_path):
     print(f"反转词汇表已保存到 {reverse_vocab_path}")
 
 if __name__ == "__main__":
-    # 路径定义,不用/\是因为这样可以在Linux和Windows上通用
-    transcript_path = os.path.join('..', 'data', 'data_aishell', 'transcript', 'aishell_transcript_v0.8.txt')
-    vocab_path = os.path.join('..', 'data', 'data_aishell', 'preprocessed', 'vocab.json')
-    reverse_vocab_path = os.path.join('..', 'data', 'data_aishell', 'preprocessed', 'reverse_vocab.json')
-
-    preprocess_vocab(transcript_path, vocab_path, reverse_vocab_path)
+    preprocess_vocab()
