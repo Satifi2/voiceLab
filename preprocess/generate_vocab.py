@@ -37,7 +37,7 @@ def preprocess_vocab():
 
     reverse_vocab = {index: char for char, index in vocab.items()}
 
-    # 将词汇表和反转词汇表保存到文件中，词汇表不占空间(几十KB)，所以不需要压缩,json很直观
+    # 将词汇表和反转词汇表保存到文件中，词汇表不占空间(几十KB)，所以不需要压缩,json很直观且好读取
     with open(vocab_path, 'w', encoding='utf-8') as f:
         json.dump(vocab, f, ensure_ascii=False, indent=4)
 
@@ -61,4 +61,6 @@ if __name__ == "__main__":
 句子总数: 141579
 句子最大长: 30
 词汇表大小: 4336
+词汇表已保存到 ..\data\data_aishell\preprocessed\vocab.json
+反转词汇表已保存到 ..\data\data_aishell\preprocessed\reverse_vocab.json
 '''
