@@ -1,6 +1,13 @@
+'''
+文件说明:
+首先读取vocab.json和reverse_vocab.json文件，从而知道每个词对应的编号
+然后读取aishell_transcript_v0.8.txt文件，将句子转换为id序列
+将id序列补齐为句子最大长度30，并且在前面加上bos和在后面加上eos，从而构建decoder_input和decoder_expected_output
+最后将处理后的数据保存到processed_transcripts.json文件中。
+'''
+
 import os
 import json
-
 
 def load_vocab():
     vocab_path = os.path.join('..', 'data', 'data_aishell', 'preprocessed', 'vocab.json')
@@ -50,6 +57,14 @@ def process_transcripts():
         json.dump(processed_data, f, ensure_ascii=False, indent=4)
 
     print(f"处理后的数据已保存到 {output_path}")
+    return processed_data
 
 if __name__ == "__main__":
-    process_transcripts()
+    processed_data = process_transcripts()
+    print(processed_data['BAC009S0002W0122'])
+
+'''
+pad bos eos 0 1 2
+处理后的数据已保存到 ..\data\data_aishell\preprocessed\processed_transcripts.json
+{'decoder_input': '1 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0', 'decoder_expected_output': '3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 2'}
+'''
