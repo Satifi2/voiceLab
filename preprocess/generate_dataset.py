@@ -66,10 +66,10 @@ if __name__ == "__main__":
     print('BAC009S0002W0122', transcripts_dict['BAC009S0002W0122'])
     print("所有句子长度都是：", len(transcripts_dict['BAC009S0002W0122']['decoder_input'].split(' ')))
 
-    # base_audio_dir = os.path.join('..', 'data', 'data_aishell', 'wav', 'train')
-    # output_base_dir = os.path.join('..', 'data', 'data_aishell', 'dataset','train')
-    base_audio_dir = os.path.join('..', 'data', 'data_aishell', 'wav', 'dev')
-    output_base_dir = os.path.join('..', 'data', 'data_aishell', 'dataset','dev')
+    base_audio_dir = os.path.join('..', 'data', 'data_aishell', 'wav', 'train')
+    output_base_dir = os.path.join('..', 'data', 'data_aishell', 'dataset','train')
+    # base_audio_dir = os.path.join('..', 'data', 'data_aishell', 'wav', 'dev')
+    # output_base_dir = os.path.join('..', 'data', 'data_aishell', 'dataset','dev')
     # base_audio_dir = os.path.join('..', 'data', 'data_aishell', 'wav', 'test')
     # output_base_dir = os.path.join('..', 'data', 'data_aishell', 'dataset','test')
     os.makedirs(output_base_dir, exist_ok=True)
@@ -88,3 +88,8 @@ Processing folder: S0766
 所有文件夹处理完成。整体最大序列长度为: 460
 '''
 
+'''
+test数据中的mfcc矩阵最长有460个时间步
+dev数据中的mfcc矩阵最长有392个时间步
+train数据中的mfcc矩阵最长有455个时间步
+'''
