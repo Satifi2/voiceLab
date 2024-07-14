@@ -48,13 +48,10 @@ class TransformerASR(nn.Module):
         decoder_input = self.decoder_embedding(decoder_input)
         decoder_input = self.pos_encoder(decoder_input)
         
-        transformer_output = self.transformer(
-            encoder_input.permute(1, 0, 2),  # (seq_len, batch_size, d_model)
-            decoder_input.permute(1, 0, 2)   # (seq_len, batch_size, d_model)
-        )
+        transformer_output = self.transformer(encoder_input, decoder_input)
         
         output = self.fc_out(transformer_output)
-        return output.permute(1, 0, 2)  # (batch_size, seq_len, vocab_size)
+        return output  # (batch_size, seq_len, vocab_size)
 
 # 加载数据和训练模型
 if __name__ == '__main__':
@@ -74,7 +71,8 @@ if __name__ == '__main__':
     )
     model = model.to(config.device)
     
-    criterion = nn.CrossEntropyLoss(ignore_index=0)
+    criterion = nn.CTCLoss(blank=0, zero_infinity=True)
+    # criterion = nn.CrossEntropyLoss(ignore_index=0)
     optimizer = optim.Adam(model.parameters(), lr=0.001)
     
     num_epochs = 5
@@ -88,10 +86,17 @@ if __name__ == '__main__':
             
             optimizer.zero_grad()
             output = model(encoder_input, decoder_input)
+
+            # output = output.reshape(-1, output.shape[-1])
+            # decoder_expected_output = decoder_expected_output.reshape(-1)
+            # loss = criterion(output, decoder_expected_output)
+
+            output = output.permute(1, 0, 2)
+            input_lengths = torch.full((output.size(1),), output.size(0), dtype=torch.long).to(config.device)
+            target_lengths = torch.sum(decoder_expected_output != 0, dim=1).to(config.device)
+            target = decoder_expected_output[decoder_expected_output != 0].flatten()
+            loss = criterion(output, target, input_lengths, target_lengths)
             
-            output = output.reshape(-1, output.shape[-1])
-            decoder_expected_output = decoder_expected_output.reshape(-1)
-            loss = criterion(output, decoder_expected_output)
             loss.backward()
             optimizer.step()
             
