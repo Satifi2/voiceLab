@@ -8,6 +8,7 @@
 
 import os
 import json
+import config
 
 def load_vocab():
     vocab_path = os.path.join('..', 'data', 'data_aishell', 'preprocessed', 'vocab.json')
@@ -30,7 +31,6 @@ def process_transcripts():
     pad_id = vocab['pad']
     bos_id = vocab['bos']
     eos_id = vocab['eos']
-    max_length = 30
     print("pad bos eos",pad_id,bos_id,eos_id)
 
     processed_data = {}
@@ -42,8 +42,8 @@ def process_transcripts():
             characters = ''.join(parts[1:])
             token_ids = [vocab[char] for char in characters]
 
-            if len(token_ids) < max_length:
-                token_ids.extend([pad_id] * (max_length - len(token_ids)))
+            if len(token_ids) < config.max_sentence_len:
+                token_ids.extend([pad_id] * (config.max_sentence_len - len(token_ids)))
 
             decoder_input = [bos_id] + token_ids
             decoder_expected_output = token_ids + [eos_id]
