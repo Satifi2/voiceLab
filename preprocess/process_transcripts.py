@@ -49,8 +49,8 @@ def process_transcripts():
             decoder_expected_output = token_ids + [eos_id]
 
             processed_data[key] = {
-                "decoder_input": ' '.join(map(str, decoder_input)),
-                "decoder_expected_output": ' '.join(map(str, decoder_expected_output))
+                "decoder_input": decoder_input,
+                "decoder_expected_output": decoder_expected_output
             }
 
     with open(output_path, 'w', encoding='utf-8') as f:

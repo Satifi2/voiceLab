@@ -20,7 +20,7 @@ def load_processed_transcripts():
 
 def extract_mfcc(wav_file):
     y, sr = librosa.load(wav_file, sr=None)
-    mfcc = librosa.feature.mfcc(y=y, sr=sr)
+    mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=64)
     return mfcc.T  # 转置以得到 [时间, 特征] 格式
 
 def process_audio_files(audio_dir, transcripts_dict):
@@ -34,8 +34,8 @@ def process_audio_files(audio_dir, transcripts_dict):
                     wav_path = os.path.join(root, file)
                     mfcc_features = extract_mfcc(wav_path)
                     max_seq_length = max(max_seq_length, mfcc_features.shape[0])
-                    decoder_input = list(map(int, transcripts_dict[file_id]["decoder_input"].split()))
-                    decoder_expected_output = list(map(int, transcripts_dict[file_id]["decoder_expected_output"].split()))
+                    decoder_input = transcripts_dict[file_id]["decoder_input"]
+                    decoder_expected_output = transcripts_dict[file_id]["decoder_expected_output"]
 
                     dataset[file_id] = {
                         "encoder_input": mfcc_features.tolist(),
@@ -66,12 +66,12 @@ if __name__ == "__main__":
     print('BAC009S0002W0122', transcripts_dict['BAC009S0002W0122'])
     print("所有句子长度都是：", len(transcripts_dict['BAC009S0002W0122']['decoder_input'].split(' ')))
 
-    base_audio_dir = os.path.join('..', 'data', 'data_aishell', 'wav', 'train')
-    output_base_dir = os.path.join('..', 'data', 'data_aishell', 'dataset','train')
+    # base_audio_dir = os.path.join('..', 'data', 'data_aishell', 'wav', 'train')
+    # output_base_dir = os.path.join('..', 'data', 'data_aishell', 'dataset','train')
     # base_audio_dir = os.path.join('..', 'data', 'data_aishell', 'wav', 'dev')
     # output_base_dir = os.path.join('..', 'data', 'data_aishell', 'dataset','dev')
-    # base_audio_dir = os.path.join('..', 'data', 'data_aishell', 'wav', 'test')
-    # output_base_dir = os.path.join('..', 'data', 'data_aishell', 'dataset','test')
+    base_audio_dir = os.path.join('..', 'data', 'data_aishell', 'wav', 'test')
+    output_base_dir = os.path.join('..', 'data', 'data_aishell', 'dataset','test')
     os.makedirs(output_base_dir, exist_ok=True)
 
     process_all_folders(base_audio_dir, transcripts_dict, output_base_dir)

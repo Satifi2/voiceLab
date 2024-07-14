@@ -5,16 +5,16 @@ from torch.utils.data import Dataset, DataLoader
 import json
 import os
 import numpy as np
-import librosa
 
 
-# 定义数据集类
 class AishellDataset(Dataset):
-    def __init__(self, json_path):
+    def __init__(self, json_path, max_seq_length=460, feature_size=20):
         with open(json_path, 'r', encoding='utf-8') as f:
             self.data = json.load(f)
 
         self.keys = list(self.data.keys())
+        self.max_seq_length = max_seq_length
+        self.feature_size = feature_size
 
     def __len__(self):
         return len(self.keys)
@@ -22,16 +22,17 @@ class AishellDataset(Dataset):
     def __getitem__(self, idx):
         key = self.keys[idx]
         sample = self.data[key]
-        encoder_input = np.array(sample['encoder_input'])
-        decoder_input = np.array(sample['decoder_input'])
-        decoder_output = np.array(sample['decoder_expected_output'])
+        encoder_input = torch.tensor(np.array(sample['encoder_input']), dtype=torch.float32)
+        decoder_input = torch.tensor(np.array(sample['decoder_input']), dtype=torch.long)
+        decoder_expected_output = torch.tensor(np.array(sample['decoder_expected_output']), dtype=torch.long)
 
-        return key, torch.tensor(encoder_input, dtype=torch.float32), torch.tensor(decoder_input,
-                                                                                   dtype=torch.long), torch.tensor(
-            decoder_output, dtype=torch.long)
+        # 对 encoder_input 进行填充,  其实就是矩阵后面填上0向量
+        if encoder_input.shape[0] < self.max_seq_length:
+            padding = torch.zeros(self.max_seq_length - encoder_input.shape[0], self.feature_size)
+            encoder_input = torch.cat([encoder_input, padding], dim=0)
 
+        return key, encoder_input, decoder_input, decoder_expected_output
 
-# 定义Transformer模型
 class TransformerModel(nn.Module):
     def __init__(self, input_dim, embed_dim, num_heads, num_encoder_layers, num_decoder_layers, dim_feedforward,
                  max_seq_length, vocab_size):
@@ -45,44 +46,40 @@ class TransformerModel(nn.Module):
         self.embed_dim = embed_dim
 
     def forward(self, src, tgt):
-        # 添加位置编码
         src = src + self.positional_encoding[:, :src.size(1), :]
         tgt = self.embedding(tgt) + self.positional_encoding[:, :tgt.size(1), :]
-        output = self.transformer(src, tgt)
+        print("src.shape",src.shape)
+        print("tgt.shape",tgt.shape)
+        src=src.permute(1,0,2)
+        tgt=tgt.permute(1,0,2)
+        output = self.transformer(src, tgt)#transformer要求的张量形状是(seq_len, batch_size, embed_dim)
         output = self.fc_out(output)
         return output
 
-
-# 数据加载器
-def collate_fn(batch):
-    keys, encoder_inputs, decoder_inputs, decoder_outputs = zip(*batch)
-    encoder_inputs = nn.utils.rnn.pad_sequence(encoder_inputs, batch_first=True)
-    decoder_inputs = nn.utils.rnn.pad_sequence(decoder_inputs, batch_first=True)
-    decoder_outputs = nn.utils.rnn.pad_sequence(decoder_outputs, batch_first=True)
-    return keys, encoder_inputs, decoder_inputs, decoder_outputs
-
-
-# 训练函数
 def train_model(model, dataloader, criterion, optimizer, num_epochs, device):
     model.to(device)
     model.train()
     for epoch in range(num_epochs):
         total_loss = 0
-        for keys, encoder_inputs, decoder_inputs, decoder_outputs in dataloader:
+        for keys, encoder_inputs, decoder_inputs, decoder_expected_output in dataloader:
+            print(keys[0],'\n',encoder_inputs.shape,'\n',decoder_inputs.shape,'\n',decoder_expected_output.shape,'\n')
             encoder_inputs = encoder_inputs.to(device)
             decoder_inputs = decoder_inputs.to(device)
-            decoder_outputs = decoder_outputs.to(device)
+            decoder_expected_output = decoder_expected_output.to(device)
 
             optimizer.zero_grad()
-            outputs = model(encoder_inputs, decoder_inputs[:, :-1])
-            outputs = outputs.permute(1, 0, 2)  # [T, N, C]
-            loss = criterion(outputs, decoder_outputs[:, 1:])
+            decoder_outputs = model(encoder_inputs, decoder_inputs)
+            #output的张量形状是(seq_len, batch_size, vocab_size)
+            decoder_outputs = decoder_outputs.permute(1, 0, 2)
+            print("decoder_outputs",decoder_outputs.shape)
+            input_lengths = torch.full(size=(decoder_outputs.size(1),), fill_value=decoder_outputs.size(0), dtype=torch.long)
+            target_lengths = torch.sum(decoder_expected_output != 0, dim=1)
+            loss = criterion(decoder_outputs, decoder_expected_output,input_lengths, target_lengths)
             loss.backward()
             optimizer.step()
             total_loss += loss.item()
 
         print(f'Epoch {epoch + 1}/{num_epochs}, Loss: {total_loss / len(dataloader)}')
-
 
 if __name__ == "__main__":
     # 超参数
@@ -93,30 +90,23 @@ if __name__ == "__main__":
     num_decoder_layers = 2
     dim_feedforward = 512
     max_seq_length = 460
-    vocab_size = 4336  # 根据词汇表的大小调整
+    vocab_size = 4336
     batch_size = 8
     num_epochs = 10
     learning_rate = 0.001
 
-    # 数据集和数据加载器
     base_dir = os.path.join('..', 'data', 'data_aishell', 'dataset', 'train')
     json_path = os.path.join(base_dir, 'S0002.json')
     dataset = AishellDataset(json_path)
 
-    # 打印指定样本的decoder_input
-    for key, encoder_input, decoder_input, decoder_output in dataset:
-        if key == 'BAC009S0002W0122':
-            print(f'Decoder input for {key}: {decoder_input}')
-            break
+    print('BAC009S0002W0122', dataset.data['BAC009S0002W0122']['decoder_input'])
 
-    dataloader = DataLoader(dataset, batch_size=batch_size, collate_fn=collate_fn, shuffle=True)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
-    # 模型、损失函数和优化器
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = TransformerModel(input_dim, embed_dim, num_heads, num_encoder_layers, num_decoder_layers, dim_feedforward,
                              max_seq_length, vocab_size)
-    criterion = nn.CTCLoss(blank=0, zero_infinity=True)  # 使用CTC损失
+    criterion = nn.CTCLoss(blank=0, zero_infinity=True)
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
-    # 训练模型
     train_model(model, dataloader, criterion, optimizer, num_epochs, device)
