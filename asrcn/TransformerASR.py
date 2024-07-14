@@ -53,12 +53,20 @@ class TransformerASR(nn.Module):
         output = self.fc_out(transformer_output)
         return output  # (batch_size, seq_len, vocab_size)
 
+# 保存模型
+def save_model(model, optimizer, epoch, loss, path):
+    torch.save({
+        'epoch': epoch,
+        'model_state_dict': model.state_dict(),
+        'optimizer_state_dict': optimizer.state_dict(),
+        'loss': loss,
+    }, path)
+
 # 加载数据和训练模型
 if __name__ == '__main__':
-    npz_file_path = os.path.join('..', 'data', 'data_aishell', 'dataset', 'train', 'S0002.npz')
-    dataset = ASRDataset(npz_file_path)
-    dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
-    # test_asr_dataset(dataloader=dataloader)
+    train_dir = os.path.join('..', 'data', 'data_aishell', 'dataset', 'train')
+    save_path = os.path.join('..', 'save', 'model_checkpoint.pth')
+    npz_files = [os.path.join(train_dir, f) for f in os.listdir(train_dir) if f.endswith('.npz')]
     
     model = TransformerASR(
         vocab_size=config.vocab_size,
@@ -72,34 +80,42 @@ if __name__ == '__main__':
     model = model.to(config.device)
     
     criterion = nn.CTCLoss(blank=0, zero_infinity=True)
-    # criterion = nn.CrossEntropyLoss(ignore_index=0)
     optimizer = optim.Adam(model.parameters(), lr=0.001)
     
     num_epochs = 5
     for epoch in range(num_epochs):
         model.train()
         total_loss = 0
-        for wav_filenames, encoder_input, decoder_input, decoder_expected_output in dataloader:
-            encoder_input = encoder_input.to(config.device)
-            decoder_input = decoder_input.to(config.device)
-            decoder_expected_output = decoder_expected_output.to(config.device)
+        for npz_file in npz_files:
+            dataset = ASRDataset(npz_file)
+            dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
             
-            optimizer.zero_grad()
-            output = model(encoder_input, decoder_input)
-
-            # output = output.reshape(-1, output.shape[-1])
-            # decoder_expected_output = decoder_expected_output.reshape(-1)
-            # loss = criterion(output, decoder_expected_output)
-
-            output = output.permute(1, 0, 2)
-            input_lengths = torch.full((output.size(1),), output.size(0), dtype=torch.long).to(config.device)
-            target_lengths = torch.sum(decoder_expected_output != 0, dim=1).to(config.device)
-            target = decoder_expected_output[decoder_expected_output != 0].flatten()
-            loss = criterion(output, target, input_lengths, target_lengths)
-            
-            loss.backward()
-            optimizer.step()
-            
-            total_loss += loss.item()
-        
-        print(f"Epoch {epoch + 1}, Loss: {total_loss / len(dataloader)}")
+            for wav_filenames, encoder_input, decoder_input, decoder_expected_output in dataloader:
+                encoder_input = encoder_input.to(config.device)
+                decoder_input = decoder_input.to(config.device)
+                decoder_expected_output = decoder_expected_output.to(config.device)
+                
+                optimizer.zero_grad()
+                output = model(encoder_input, decoder_input)
+                # 调整 output 形状为 (seq_len, batch_size, vocab_size)
+                output = output.permute(1, 0, 2)
+                
+                # 计算CTC损失所需的长度信息
+                input_lengths = torch.full((output.size(1),), output.size(0), dtype=torch.long).to(config.device)
+                target_lengths = torch.sum(decoder_expected_output != 0, dim=1).to(config.device)
+                
+                # 将 target 展平为一维张量并移除填充元素
+                target = decoder_expected_output[decoder_expected_output != 0].flatten()
+                
+                # 计算CTC损失
+                loss = criterion(output, target, input_lengths, target_lengths)
+                
+                loss.backward()
+                optimizer.step()
+                
+                total_loss += loss.item()
+            print(f"{npz_file} finished,Total Loss: {total_loss / len(npz_files)}")
+    
+    # 保存模型
+    save_model(model, optimizer, num_epochs, total_loss / len(npz_files), save_path)
+    print(f"Model saved to {save_path}")
