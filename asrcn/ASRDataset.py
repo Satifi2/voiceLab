@@ -6,7 +6,7 @@ from torch.utils.data import Dataset, DataLoader
 class ASRDataset(Dataset):
     def __init__(self, npz_file):
         data = np.load(npz_file)
-        self.dataset_name = data['output_file_path']
+        self.wav_filenames = data['wav_filenames']
         self.encoder_input = data['encoder_input']
         self.decoder_input = data['decoder_input']
         self.decoder_expected_output = data['decoder_expected_output']
@@ -23,23 +23,27 @@ class ASRDataset(Dataset):
         decoder_input = torch.tensor(decoder_input, dtype=torch.long)
         decoder_expected_output = torch.tensor(decoder_expected_output, dtype=torch.long)
         
-        return self.dataset_name, encoder_input, decoder_input, decoder_expected_output
+        return self.wav_filenames[idx], encoder_input, decoder_input, decoder_expected_output
+
+def test_asr_dataset(dataloader):
+    for wav_filenames, encoder_input, decoder_input, decoder_expected_output in dataloader:
+        # print(encoder_input)
+        # print(decoder_input)
+        # print(decoder_expected_output)
+        # break
+        print("wav_filenames",wav_filenames,f"共计有:{len(wav_filenames)}个")
+        print("encoder_input", encoder_input.shape)
+        print("decoder_input", decoder_input.shape)
+        print("decoder_expected_output", decoder_expected_output.shape)
 
 if __name__ == '__main__':
     npz_file_path = output_base_dir = os.path.join('..', 'data', 'data_aishell', 'dataset', 'train', 'S0002.npz')
     
     dataset = ASRDataset(npz_file_path)
     dataloader = DataLoader(dataset, batch_size=32, shuffle=False)
+    test_asr_dataset(dataloader)
     
-    for datasetname,encoder_input, decoder_input, decoder_expected_output in dataloader:
-        # print(encoder_input)
-        # print(decoder_input)
-        # print(decoder_expected_output)
-        # break
-        print("datasetname",datasetname)
-        print("encoder_input", encoder_input.shape)
-        print("decoder_input", decoder_input.shape)
-        print("decoder_expected_output", decoder_expected_output.shape)
+
 
 '''
 364#wav文件总数

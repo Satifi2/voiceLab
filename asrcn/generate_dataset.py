@@ -27,9 +27,9 @@ def extract_mfcc(wav_file):
     return mfcc
 
 def process_audio_files(audio_dir, transcripts_dict):
-    # encoder_inputs = []
-    # decoder_inputs = []
-    # decoder_expected_outputs = []
+    encoder_inputs = []
+    decoder_inputs = []
+    decoder_expected_outputs = []
     wav_filenames = []
 
     for root, _, files in os.walk(audio_dir):
@@ -42,20 +42,20 @@ def process_audio_files(audio_dir, transcripts_dict):
                     continue
                 wav_filenames.append(file_id)
                 
-                # mfcc = extract_mfcc(wav_file)
-                # encoder_inputs.append(mfcc)
+                mfcc = extract_mfcc(wav_file)
+                encoder_inputs.append(mfcc)
                 
-                # decoder_input = transcripts_dict[file_id]['decoder_input']
-                # decoder_expected_output = transcripts_dict[file_id]['decoder_expected_output']
+                decoder_input = transcripts_dict[file_id]['decoder_input']
+                decoder_expected_output = transcripts_dict[file_id]['decoder_expected_output']
                 
-                # decoder_inputs.append(decoder_input)
-                # decoder_expected_outputs.append(decoder_expected_output)
+                decoder_inputs.append(decoder_input)
+                decoder_expected_outputs.append(decoder_expected_output)
     
-    # encoder_input_array = np.array(encoder_inputs)
-    # decoder_input_array = np.array(decoder_inputs)
-    # decoder_expected_output_array = np.array(decoder_expected_outputs)
+    encoder_input_array = np.array(encoder_inputs)
+    decoder_input_array = np.array(decoder_inputs)
+    decoder_expected_output_array = np.array(decoder_expected_outputs)
 
-    return wav_filenames#, encoder_input_array, decoder_input_array, decoder_expected_output_array
+    return wav_filenames, encoder_input_array, decoder_input_array, decoder_expected_output_array
 
 def process_all_folders(base_audio_dir, transcripts_dict, output_base_dir):
     if not os.path.exists(output_base_dir):
@@ -64,29 +64,25 @@ def process_all_folders(base_audio_dir, transcripts_dict, output_base_dir):
     for folder_name in os.listdir(base_audio_dir):
         folder_path = os.path.join(base_audio_dir, folder_name)
         if os.path.isdir(folder_path):
-            # wav_filenames, encoder_input_array, decoder_input_array, decoder_expected_output_array = process_audio_files(folder_path, transcripts_dict)
-            wav_filenames = process_audio_files(folder_path, transcripts_dict)
+            wav_filenames, encoder_input_array, decoder_input_array, decoder_expected_output_array = process_audio_files(folder_path, transcripts_dict)
+            
+            output_file_path = os.path.join(output_base_dir, f'{folder_name}.npz')
+            np.savez_compressed(output_file_path,
+                                wav_filenames=wav_filenames,
+                                encoder_input=encoder_input_array,
+                                decoder_input=decoder_input_array,
+                                decoder_expected_output=decoder_expected_output_array)
 
-            # output_file_path = os.path.join(output_base_dir, f'{folder_name}.npz')
-            # np.savez_compressed(output_file_path,
-            #                     encoder_input=encoder_input_array,
-            #                     decoder_input=decoder_input_array,
-            #                     decoder_expected_output=decoder_expected_output_array)
-            np.savez_compressed(
-                os.path.join(os.path.join('..', 'data', 'data_aishell', 'names', 'dev'), f'{folder_name}.npz'),
-                wav_filenames = wav_filenames
-            )
-
-            # print("encoder_input=",encoder_input_array.shape,"\ndecoder_input=",decoder_input_array.shape,"\ndecoder_expected_output=",decoder_expected_output_array.shape)
-            print(f'{folder_path}中的wav文件特征被提取出,')
+            print("encoder_input=",encoder_input_array.shape,"\ndecoder_input=",decoder_input_array.shape,"\ndecoder_expected_output=",decoder_expected_output_array.shape)
+            print(f'{folder_path}中的wav文件特征被提取出,并被存储到了{output_file_path}')
 
 if __name__ == "__main__":
     transcripts_dict = load_processed_transcripts()
     print('BAC009S0002W0122', transcripts_dict['BAC009S0002W0122'])
     print("所有句子长度都是：", len(transcripts_dict['BAC009S0002W0122']['decoder_input']))
 
-    base_audio_dir = os.path.join('..', 'data', 'data_aishell', 'wav', 'dev')
-    output_base_dir = os.path.join('..', 'data', 'data_aishell', 'dataset', 'dev')
+    base_audio_dir = os.path.join('..', 'data', 'data_aishell', 'wav', 'train')
+    output_base_dir = os.path.join('..', 'data', 'data_aishell', 'dataset', 'train')
 
     # process_audio_files(os.path.join(base_audio_dir,'S0002'), transcripts_dict)
     process_all_folders(base_audio_dir,transcripts_dict,output_base_dir)
