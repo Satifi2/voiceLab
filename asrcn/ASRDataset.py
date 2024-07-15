@@ -26,15 +26,14 @@ class ASRDataset(Dataset):
         return self.wav_filenames[idx], encoder_input, decoder_input, decoder_expected_output
 
 def test_asr_dataset(dataloader):
-    for wav_filenames, encoder_input, decoder_input, decoder_expected_output in dataloader:
-        # print(encoder_input)
-        # print(decoder_input)
-        # print(decoder_expected_output)
-        # break
-        print("wav_filenames",wav_filenames,f"共计有:{len(wav_filenames)}个")
-        print("encoder_input", encoder_input.shape)
-        print("decoder_input", decoder_input.shape)
-        print("decoder_expected_output", decoder_expected_output.shape)
+    data_iter = iter(dataloader)
+    
+    wav_filenames, encoder_input, decoder_input, decoder_expected_output = next(data_iter)
+    print("WAV Filenames:", wav_filenames[0])
+    print("Encoder Input:", encoder_input.shape)
+    print("Decoder Input:", decoder_input[0],decoder_input.shape)
+    print("Decoder Expected Output:", decoder_expected_output[0],decoder_expected_output.shape)
+    return encoder_input[0],decoder_input[0]
 
 if __name__ == '__main__':
     npz_file_path = output_base_dir = os.path.join('..', 'data', 'data_aishell', 'dataset', 'train', 'S0002.npz')
