@@ -68,7 +68,7 @@ if __name__ == '__main__':
     dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
     # test_asr_dataset(dataloader=dataloader)
     
-    num_epochs = 10
+    num_epochs = 5
     for epoch in range(num_epochs):
         model.train()
         total_loss = 0
