@@ -28,23 +28,27 @@ class TransformerASR(nn.Module):
         self.fc_out = nn.Linear(d_model, vocab_size)
     
     def forward(self, encoder_input, decoder_input):
-        encoder_input = self.encoder_norm(encoder_input)
+        encoder_input_pad = utils.pad_mask(encoder_input)
+        decoder_input_pad = utils.pad_mask(decoder_input)
+
+        # encoder_input = self.encoder_norm(encoder_input)
         encoder_input = self.encoder_pos(encoder_input)
         
         decoder_input = self.decoder_embedding(decoder_input)
         decoder_input = self.decoder_pos(decoder_input)
         
-        transformer_output = self.transformer(encoder_input,decoder_input)
+        transformer_output = self.transformer(
+            src=encoder_input,
+            tgt=decoder_input,
+            src_key_padding_mask=encoder_input_pad,  
+            tgt_key_padding_mask=decoder_input_pad, 
+            memory_key_padding_mask=encoder_input_pad  
+        )
         
         output = self.fc_out(transformer_output)
         return output
 
 if __name__ == '__main__':
-    npz_file_path = os.path.join('..', 'data', 'data_aishell', 'dataset', 'train', 'S0002.npz')
-    dataset = ASRDataset(npz_file_path)
-    dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
-    test_asr_dataset(dataloader=dataloader)
-    
     model = TransformerASR(
         vocab_size=config.vocab_size,
         d_model=config.mfcc_feature,
@@ -56,11 +60,15 @@ if __name__ == '__main__':
         decoder_seqlen=config.max_sentence_len
     )
     model = model.to(config.device)
-    
     criterion = nn.CrossEntropyLoss(ignore_index=0)
     optimizer = optim.Adam(model.parameters(), lr=0.001)
+
+    npz_file_path = os.path.join('..', 'data', 'data_aishell', 'dataset', 'train', 'S0002.npz')
+    dataset = ASRDataset(npz_file_path)
+    dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+    # test_asr_dataset(dataloader=dataloader)
     
-    num_epochs = 5
+    num_epochs = 10
     for epoch in range(num_epochs):
         model.train()
         total_loss = 0

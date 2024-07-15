@@ -2,6 +2,7 @@ import os
 import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
+import utils
 
 class ASRDataset(Dataset):
     def __init__(self, npz_file):
@@ -33,6 +34,8 @@ def test_asr_dataset(dataloader):
     print("Encoder Input:", encoder_input.shape)
     print("Decoder Input:", decoder_input[0],decoder_input.shape)
     print("Decoder Expected Output:", decoder_expected_output[0],decoder_expected_output.shape)
+    print("Encoder Input Mask",utils.pad_mask(encoder_input)[0],utils.pad_mask(encoder_input).shape)
+    print("Decoder Input Mask",utils.pad_mask(decoder_input)[0],utils.pad_mask(decoder_input).shape)
     return encoder_input[0],decoder_input[0]
 
 if __name__ == '__main__':
@@ -49,16 +52,8 @@ if __name__ == '__main__':
 encoder_input torch.Size([32, 460, 128])
 decoder_input torch.Size([32, 31])
 decoder_expected_output torch.Size([32, 31])
-encoder_input torch.Size([32, 460, 128])
-decoder_input torch.Size([32, 31])
-decoder_expected_output torch.Size([32, 31])
-encoder_input torch.Size([32, 460, 128])
 ...
-'''
 
-'''
-        # print(decoder_input)
-        # print(decoder_expected_output)
 array([[  1, 140,   6, ...,   0,   0,   0],
        [  1,  13, 226, ...,   0,   0,   0],
        [  1, 139,  49, ...,   0,   0,   0],
@@ -66,12 +61,4 @@ array([[  1, 140,   6, ...,   0,   0,   0],
        [  1,  67,  71, ...,   0,   0,   0],
        [  1, 830, 918, ...,   0,   0,   0],
        [  1, 138, 124, ...,   0,   0,   0]]), 
-       
-array([[140,   6, 147, ...,   0,   0,   2],
-       [ 13, 226, 227, ...,   0,   0,   2],
-       [139,  49, 213, ...,   0,   0,   2],
-       ...,
-       [ 67,  71, 142, ...,   0,   0,   2],
-       [830, 918,  72, ...,   0,   0,   2],
-       [138, 124,  19, ...,   0,   0,   2]]))
 '''
