@@ -17,7 +17,7 @@ class PositionalEncoding(nn.Module):
         self.register_buffer('pe', pe)
 
     def forward(self, x):
-        return x + self.pe
+        return x + self.pe.to(config.device)
 
 def test_position_encoding():
     d_model = 10
@@ -61,7 +61,7 @@ def test_pad_mask():
     ])
     print("2D Input Pad Mask:\n", pad_mask(input_tensor_2d))
 
-def save_model_and_config(model, epoch, model_name, save_dir):
+def save_model_and_config(model, epoch, model_name, save_dir=os.path.join('..','model')):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
         
@@ -72,61 +72,38 @@ def save_model_and_config(model, epoch, model_name, save_dir):
     config_save_path = os.path.join(save_dir, f'{model_name}_config.json')
     config_data = {
         'model_name': model_name,
-        'config': {
-            'model_name':config.model_name,
-            'mfcc_feature': config.mfcc_feature,
-            'max_sentence_len': config.max_sentence_len,
-            'max_mfcc_seqlen': config.max_mfcc_seqlen,
-            'num_attention_heads': config.num_attention_heads,
-            'num_layers': config.num_layers,
-            'ffn_hidden_dim': config.ffn_hidden_dim,
-            'vocab_size': config.vocab_size,
-            'device': config.device,
-            'learning_rate': config.learning_rate,
-            'dataloader_batch_size': config.dataloader_batch_size
-        }
+        'model_name':config.model_name,
+        'mfcc_feature': config.mfcc_feature,
+        'max_sentence_len': config.max_sentence_len,
+        'max_mfcc_seqlen': config.max_mfcc_seqlen,
+        'num_attention_heads': config.num_attention_heads,
+        'num_layers': config.num_layers,
+        'ffn_hidden_dim': config.ffn_hidden_dim,
+        'vocab_size': config.vocab_size,
+        'device': config.device,
+        'learning_rate': config.learning_rate,
+        'dataloader_batch_size': config.dataloader_batch_size
     }
     with open(config_save_path, 'w') as f:
         json.dump(config_data, f, indent=4)
     print(f"Configuration saved to {config_save_path}")
 
-def load_transformer_model(model_name, epoch, save_dir):
-    config_save_path = os.path.join(save_dir, f'{model_name}_config.json')
-    with open(config_save_path, 'r') as f:
+def load_config(config_path):
+    with open(config_path, 'r') as f:
         config_data = json.load(f)
-    
-    model_config = config_data['config']
+    config.model_name = config_data['model_name']
+    config.mfcc_feature = config_data['mfcc_feature']
+    config.max_sentence_len = config_data['max_sentence_len']
+    config.max_mfcc_seqlen = config_data['max_mfcc_seqlen']
+    config.num_attention_heads = config_data['num_attention_heads']
+    config.num_layers = config_data['num_layers']
+    config.ffn_hidden_dim = config_data['ffn_hidden_dim']
+    config.vocab_size = config_data['vocab_size']
+    config.device = config_data['device']
+    config.learning_rate = config_data['learning_rate']
+    config.dataloader_batch_size = config_data['dataloader_batch_size']
 
-    config.model_name = model_config['model_name']
-    config.mfcc_feature = model_config['mfcc_feature']
-    config.max_sentence_len = model_config['max_sentence_len']
-    config.max_mfcc_seqlen = model_config['max_mfcc_seqlen']
-    config.num_attention_heads = model_config['num_attention_heads']
-    config.num_layers = model_config['num_layers']
-    config.ffn_hidden_dim = model_config['ffn_hidden_dim']
-    config.vocab_size = model_config['vocab_size']
-    config.device = model_config['device']
-    config.learning_rate = model_config['learning_rate']
-    config.dataloader_batch_size = model_config['dataloader_batch_size']
-
-    print("the configuration is updated")
-    print(f"mfcc_feature: {config.mfcc_feature}")
-
-    model = model_name(
-        mfcc_feature=config.mfcc_feature,
-        max_sentence_len=config.max_sentence_len,
-        max_mfcc_seqlen=config.max_mfcc_seqlen,
-        num_attention_heads=config.num_attention_heads,
-        num_layers=config.num_layers,
-        ffn_hidden_dim=config.ffn_hidden_dim,
-        vocab_size=config.vocab_size
-    ).to(config.device)
-
-    model_save_path = os.path.join(save_dir, f'{model_name}_epoch_{epoch}.pth')
-    model.load_state_dict(torch.load(model_save_path, map_location=config.device))
-    print(f"Model loaded from {model_save_path}")
-
-    return model
+    print("the configuration is loaded")
 
 if __name__ == "__main__":
     test_position_encoding()

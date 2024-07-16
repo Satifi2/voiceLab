@@ -11,10 +11,10 @@ import utils
 class TransformerASR(nn.Module):
     def __init__(self, vocab_size, d_model, nhead, num_encoder_layers, num_decoder_layers, dim_feedforward, encoder_seqlen, decoder_seqlen):
         super(TransformerASR, self).__init__()
-        self.encoder_pos = utils.PositionalEncoding(encoder_seqlen,d_model)
-        self.encoder_norm = nn.LayerNorm(d_model)
-        self.decoder_embedding = nn.Embedding(vocab_size, d_model, padding_idx=0)
-        self.decoder_pos = utils.PositionalEncoding(decoder_seqlen,d_model)
+        self.encoder_pos = utils.PositionalEncoding(encoder_seqlen, d_model).to(config.device)
+        self.encoder_norm = nn.LayerNorm(d_model).to(config.device)
+        self.decoder_embedding = nn.Embedding(vocab_size, d_model, padding_idx=0).to(config.device)
+        self.decoder_pos = utils.PositionalEncoding(decoder_seqlen, d_model).to(config.device)
         self.transformer = nn.Transformer(
             d_model=d_model,
             nhead=nhead,
@@ -24,8 +24,8 @@ class TransformerASR(nn.Module):
             dropout=0.1,
             activation='relu',
             batch_first=True
-        )
-        self.fc_out = nn.Linear(d_model, vocab_size)
+        ).to(config.device)
+        self.fc_out = nn.Linear(d_model, vocab_size).to(config.device)
     
     def forward(self, encoder_input, decoder_input):
         encoder_input_pad = utils.pad_mask(encoder_input)
@@ -48,6 +48,17 @@ class TransformerASR(nn.Module):
         output = self.fc_out(transformer_output)
         return output
 
+    def predict(self, encoder_input, decoder_input, reverse_vocab):
+        with torch.no_grad():
+            output = self.forward(encoder_input, decoder_input)
+            predicted_indices = torch.argmax(output, dim=-1)
+            batch_size, seq_len = predicted_indices.size()
+            predicted_words = []
+            for i in range(batch_size):
+                predicted_words.append([reverse_vocab[str(idx.item())] for idx in predicted_indices[i]])
+
+            return predicted_indices, predicted_words
+
 if __name__ == '__main__':
     model = TransformerASR(
         vocab_size=config.vocab_size,
@@ -63,8 +74,6 @@ if __name__ == '__main__':
     criterion = nn.CrossEntropyLoss(ignore_index=0)
     optimizer = optim.Adam(model.parameters(), lr=config.learning_rate)
     
-    utils.save_model_and_config(model,100,config.model_name,os.path.join('..', 'model','transformer_asr'))
-
     train_dir_path = os.path.join('..', 'data', 'data_aishell', 'dataset', 'train')
     npz_files = [os.path.join(train_dir_path, f) for f in os.listdir(train_dir_path) if f.endswith('.npz')]
 
@@ -74,7 +83,7 @@ if __name__ == '__main__':
         total_loss = 0
         for npz_file in npz_files:
             dataset = ASRDataset(npz_file)
-            dataloader = DataLoader(dataset, batch_size=256, shuffle=True)
+            dataloader = DataLoader(dataset, batch_size=config.dataloader_batch_size, shuffle=True)
             dataset_loss = 0
             for batch in dataloader:
                 wav_filenames, encoder_input, decoder_input, decoder_expected_output = batch
@@ -94,5 +103,6 @@ if __name__ == '__main__':
                 total_loss += loss.item()
                 dataset_loss += loss.item()
             print(f"Epoch {epoch + 1},file:{npz_file}, Loss: {total_loss / len(npz_files)}, data_set_loss:{dataset_loss}")
-        utils.save_model_and_config(model, epoch, config.model_name)
+        if (epoch+1) % 5 ==0:
+            utils.save_model_and_config(model, epoch, config.model_name)
     

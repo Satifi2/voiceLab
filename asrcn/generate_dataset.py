@@ -84,6 +84,12 @@ if __name__ == "__main__":
     base_audio_dir = os.path.join('..', 'data', 'data_aishell', 'wav', 'train')
     output_base_dir = os.path.join('..', 'data', 'data_aishell', 'dataset', 'train')
 
+    # base_audio_dir = os.path.join('..', 'data', 'data_aishell', 'wav', 'dev')
+    # output_base_dir = os.path.join('..', 'data', 'data_aishell', 'dataset', 'dev')
+
+    # base_audio_dir = os.path.join('..', 'data', 'data_aishell', 'wav', 'test')
+    # output_base_dir = os.path.join('..', 'data', 'data_aishell', 'dataset', 'test')
+
     # process_audio_files(os.path.join(base_audio_dir,'S0002'), transcripts_dict)
     process_all_folders(base_audio_dir,transcripts_dict,output_base_dir)
 
