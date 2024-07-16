@@ -47,11 +47,6 @@ class TransformerASR(nn.Module):
         
         output = self.fc_out(transformer_output)
         return output
-    
-def save_model(model, epoch, save_dir=os.path.join('..', 'model')):
-    save_path = os.path.join(save_dir, f'transformer_asr_epoch_{epoch}.pth')
-    torch.save(model.state_dict(), save_path)
-    print(f"Model saved to {save_path}")
 
 if __name__ == '__main__':
     model = TransformerASR(
@@ -66,7 +61,9 @@ if __name__ == '__main__':
     )
     model = model.to(config.device)
     criterion = nn.CrossEntropyLoss(ignore_index=0)
-    optimizer = optim.Adam(model.parameters(), lr=0.00001)
+    optimizer = optim.Adam(model.parameters(), lr=config.learning_rate)
+    
+    utils.save_model_and_config(model,100,config.model_name,os.path.join('..', 'model','transformer_asr'))
 
     train_dir_path = os.path.join('..', 'data', 'data_aishell', 'dataset', 'train')
     npz_files = [os.path.join(train_dir_path, f) for f in os.listdir(train_dir_path) if f.endswith('.npz')]
@@ -97,5 +94,5 @@ if __name__ == '__main__':
                 total_loss += loss.item()
                 dataset_loss += loss.item()
             print(f"Epoch {epoch + 1},file:{npz_file}, Loss: {total_loss / len(npz_files)}, data_set_loss:{dataset_loss}")
-        save_model(model, epoch)
+        utils.save_model_and_config(model, epoch, config.model_name)
     
