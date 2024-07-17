@@ -1,8 +1,8 @@
-model_name = "transformer_asr_50"
+model_name = "transformer_ctc_big"
 mfcc_feature = 128
 max_sentence_len = 30
 max_mfcc_seqlen = 460
-num_attention_heads = 16
+num_attention_heads = 8
 num_layers = 12
 ffn_hidden_dim = 4096
 vocab_size = 4336
