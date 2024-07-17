@@ -12,11 +12,17 @@ if __name__ == "__main__":
     # model_save_path = os.path.join(model_save_dir,'transformer_asr_day_epoch_5.pth')
     # config_save_path = os.path.join(model_save_dir,"transformer_asr_day_config.json")
 
-    model_save_path = os.path.join(model_save_dir,'transformer_asr_night_epoch_4.pth')
-    config_save_path = os.path.join(model_save_dir,"transformer_asr_night_config.json")
+    # model_save_path = os.path.join(model_save_dir,'transformer_asr_night_epoch_4.pth')
+    # config_save_path = os.path.join(model_save_dir,"transformer_asr_night_config.json")
 
     # model_save_path = os.path.join(model_save_dir,'transformer_asr_epoch_4.pth')
     # config_save_path = os.path.join(model_save_dir,"transformer_asr_config.json")
+
+    # model_save_path = os.path.join(model_save_dir,'transformer_asr_norm_epoch_9.pth')
+    # config_save_path = os.path.join(model_save_dir,"transformer_asr_norm_config.json")
+
+    model_save_path = os.path.join(model_save_dir,'transformer_asr_50_epoch_9.pth')
+    config_save_path = os.path.join(model_save_dir,"transformer_asr_50_config.json")
 
     utils.load_config(config_save_path)
     print(f"the model {config.model_name} is loading")

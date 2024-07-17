@@ -1,11 +1,11 @@
-model_name = "transformer_asr"
+model_name = "transformer_asr_50"
 mfcc_feature = 128
-max_sentence_len = 31
+max_sentence_len = 30
 max_mfcc_seqlen = 460
-num_attention_heads = 8
-num_layers = 6
-ffn_hidden_dim = 1024
+num_attention_heads = 16
+num_layers = 12
+ffn_hidden_dim = 4096
 vocab_size = 4336
 device = 'cuda'
 learning_rate = 0.00001
-dataloader_batch_size = 256
+dataloader_batch_size = 64

@@ -61,7 +61,7 @@ def test_pad_mask():
     ])
     print("2D Input Pad Mask:\n", pad_mask(input_tensor_2d))
 
-def save_model_and_config(model, epoch, model_name, save_dir=os.path.join('..','model')):
+def save_model_and_config(model, epoch, model_name, save_dir=os.path.join('..','model','transformer_asr')):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
         

@@ -11,10 +11,10 @@ import utils
 class TransformerASR(nn.Module):
     def __init__(self, vocab_size, d_model, nhead, num_encoder_layers, num_decoder_layers, dim_feedforward, encoder_seqlen, decoder_seqlen):
         super(TransformerASR, self).__init__()
-        self.encoder_pos = utils.PositionalEncoding(encoder_seqlen, d_model).to(config.device)
+        self.encoder_pos = utils.PositionalEncoding(encoder_seqlen, d_model)
         self.encoder_norm = nn.LayerNorm(d_model).to(config.device)
         self.decoder_embedding = nn.Embedding(vocab_size, d_model, padding_idx=0).to(config.device)
-        self.decoder_pos = utils.PositionalEncoding(decoder_seqlen, d_model).to(config.device)
+        self.decoder_pos = utils.PositionalEncoding(decoder_seqlen, d_model)
         self.transformer = nn.Transformer(
             d_model=d_model,
             nhead=nhead,
@@ -28,8 +28,8 @@ class TransformerASR(nn.Module):
         self.fc_out = nn.Linear(d_model, vocab_size).to(config.device)
     
     def forward(self, encoder_input, decoder_input):
-        encoder_input_pad = utils.pad_mask(encoder_input)
-        decoder_input_pad = utils.pad_mask(decoder_input)
+        # encoder_input_pad = utils.pad_mask(encoder_input)
+        # decoder_input_pad = utils.pad_mask(decoder_input)
 
         # encoder_input = self.encoder_norm(encoder_input)
         encoder_input = self.encoder_pos(encoder_input)
@@ -40,9 +40,9 @@ class TransformerASR(nn.Module):
         transformer_output = self.transformer(
             src=encoder_input,
             tgt=decoder_input,
-            src_key_padding_mask=encoder_input_pad,  
-            tgt_key_padding_mask=decoder_input_pad, 
-            memory_key_padding_mask=encoder_input_pad  
+            # src_key_padding_mask=encoder_input_pad,  
+            # tgt_key_padding_mask=decoder_input_pad, 
+            # memory_key_padding_mask=encoder_input_pad  
         )
         
         output = self.fc_out(transformer_output)
@@ -71,13 +71,14 @@ if __name__ == '__main__':
         decoder_seqlen=config.max_sentence_len
     )
     model = model.to(config.device)
-    criterion = nn.CrossEntropyLoss(ignore_index=0)
+    # criterion = nn.CrossEntropyLoss(ignore_index=0)
+    criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=config.learning_rate)
     
     train_dir_path = os.path.join('..', 'data', 'data_aishell', 'dataset', 'train')
     npz_files = [os.path.join(train_dir_path, f) for f in os.listdir(train_dir_path) if f.endswith('.npz')]
 
-    num_epochs = 5
+    num_epochs = 50
     for epoch in range(num_epochs):
         model.train()
         total_loss = 0
@@ -102,7 +103,7 @@ if __name__ == '__main__':
 
                 total_loss += loss.item()
                 dataset_loss += loss.item()
-            print(f"Epoch {epoch + 1},file:{npz_file}, Loss: {total_loss / len(npz_files)}, data_set_loss:{dataset_loss}")
-        if (epoch+1) % 5 ==0:
+            print(f"Epoch {epoch + 1},file:{npz_file},Total Loss: {total_loss / len(npz_files)}, dataset Loss {dataset_loss}")
+        if (epoch+1) % 10 ==0:
             utils.save_model_and_config(model, epoch, config.model_name)
     

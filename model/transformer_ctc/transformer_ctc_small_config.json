@@ -1,0 +1,13 @@
+{
+    "model_name": "transformer_ctc_small",
+    "mfcc_feature": 128,
+    "max_sentence_len": 30,
+    "max_mfcc_seqlen": 460,
+    "num_attention_heads": 8,
+    "num_layers": 6,
+    "ffn_hidden_dim": 1024,
+    "vocab_size": 4336,
+    "device": "cuda",
+    "learning_rate": 1e-05,
+    "dataloader_batch_size": 16
+}

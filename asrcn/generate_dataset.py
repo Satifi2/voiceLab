@@ -81,14 +81,14 @@ if __name__ == "__main__":
     print('BAC009S0002W0122', transcripts_dict['BAC009S0002W0122'])
     print("所有句子长度都是：", len(transcripts_dict['BAC009S0002W0122']['decoder_input']))
 
-    base_audio_dir = os.path.join('..', 'data', 'data_aishell', 'wav', 'train')
-    output_base_dir = os.path.join('..', 'data', 'data_aishell', 'dataset', 'train')
+    # base_audio_dir = os.path.join('..', 'data', 'data_aishell', 'wav', 'train')
+    # output_base_dir = os.path.join('..', 'data', 'data_aishell', 'dataset', 'train')
 
     # base_audio_dir = os.path.join('..', 'data', 'data_aishell', 'wav', 'dev')
     # output_base_dir = os.path.join('..', 'data', 'data_aishell', 'dataset', 'dev')
 
-    # base_audio_dir = os.path.join('..', 'data', 'data_aishell', 'wav', 'test')
-    # output_base_dir = os.path.join('..', 'data', 'data_aishell', 'dataset', 'test')
+    base_audio_dir = os.path.join('..', 'data', 'data_aishell', 'wav', 'test')
+    output_base_dir = os.path.join('..', 'data', 'data_aishell', 'dataset', 'test')
 
     # process_audio_files(os.path.join(base_audio_dir,'S0002'), transcripts_dict)
     process_all_folders(base_audio_dir,transcripts_dict,output_base_dir)
