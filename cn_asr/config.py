@@ -1,0 +1,16 @@
+model_name = ""
+sampling_rate = 4000
+mfcc_features = 64
+max_sentence_len = 31
+max_mfcc_seqlen = 460
+num_attention_heads = 8
+num_layers = 6
+ffn_hidden_dim = 1024
+vocab_size = 4337
+device = 'cuda'
+learning_rate = 0.00005
+dataloader_batch_size = 64
+dropout = 0.1
+blank_token = 0
+bos_token = 1
+eos_token = 2
