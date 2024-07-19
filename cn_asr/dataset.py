@@ -1,9 +1,9 @@
 import os
 import json
 import librosa
-import numpy as np
 from torch.utils.data import Dataset, DataLoader
-import config
+from config import config
+import torch
 
 def load_transcript(file_path):
     transcript_dict = {}
@@ -28,7 +28,7 @@ def process_wav(wav_path, transcript_dict, vocab):
     char_ids = [vocab[char] for char in chars]
     
     audio, _ = librosa.load(wav_path, sr=config.sampling_rate)
-    mfcc_matrix = librosa.feature.mfcc(y=audio, sr=config.sampling_rate, n_mfcc=config.mfcc_features).T
+    mfcc_matrix = librosa.feature.mfcc(y=audio, sr=config.sampling_rate, n_mfcc=config.mfcc_feature, hop_length = config.hop_length).T
     # print("mfcc",mfcc_matrix.shape)
     
     return mfcc_matrix, char_ids
@@ -62,13 +62,18 @@ if __name__ == "__main__":
     dataset = AishellDataset('../data/data_aishell/wav/train/S0002')
     print(f"Total number of samples: {len(dataset)}")
     
+    reverse_vocab = os.path.join('.', 'reverse_vocab.json')
+    with open(reverse_vocab, 'r', encoding='utf-8') as f:
+        reverse_vocab = json.load(f)
+
     dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
     
-    for i, (features, char_ids, wav_file) in enumerate(dataloader):
-        print(f"Sample {i + 1}:{wav_file}")
-        print(f"Feature shape: {features.shape}")
+    for i, (mfcc_matrix, char_ids, wav_file) in enumerate(dataloader):
+        print(f"\nSample {i + 1}:{wav_file}")
         print(f"Character IDs: {char_ids}")
-        print()
+        print([reverse_vocab[str(char_id)] for char_id in torch.tensor(char_ids).tolist()])
+        print(f"mfcc_matrix shape: {mfcc_matrix.shape}")
+        print(torch.tensor(char_ids).shape)
         
         if i == 2:  # Print only the first 3 samples
             break
