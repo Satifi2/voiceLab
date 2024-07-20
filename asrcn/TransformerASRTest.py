@@ -21,8 +21,8 @@ if __name__ == "__main__":
     # model_save_path = os.path.join(model_save_dir,'transformer_asr_norm_epoch_9.pth')
     # config_save_path = os.path.join(model_save_dir,"transformer_asr_norm_config.json")
 
-    model_save_path = os.path.join(model_save_dir,'transformer_asr_51_epoch_0.pth')
-    config_save_path = os.path.join(model_save_dir,"transformer_asr_51_config.json")
+    model_save_path = os.path.join(model_save_dir,'transformer_asr_51td_epoch_4.pth')
+    config_save_path = os.path.join(model_save_dir,"transformer_asr_51td_config.json")
 
     model = TransformerASR(
         vocab_size=config.vocab_size,

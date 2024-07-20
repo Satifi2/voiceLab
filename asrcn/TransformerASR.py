@@ -111,8 +111,8 @@ def model_init(model_save_path='', config_save_path=''):
 if __name__ == '__main__':
     utils.set_seed()
     model_save_dir = os.path.join('..', 'model','transformer_asr')
-    model_save_path = os.path.join(model_save_dir,'transformer_asr_51_epoch_0.pth')
-    config_save_path = os.path.join(model_save_dir,"transformer_asr_51_config.json")
+    model_save_path = os.path.join(model_save_dir,'transformer_asr_51t_epoch_4.pth')
+    config_save_path = os.path.join(model_save_dir,"transformer_asr_51t_config.json")
     model = model_init(model_save_path,config_save_path)
 
     #test save
@@ -123,11 +123,11 @@ if __name__ == '__main__':
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=config.learning_rate)
     
-    train_dir_path = os.path.join('..', 'data', 'data_aishell', 'dataset', 'test')
+    train_dir_path = os.path.join('..', 'data', 'data_aishell', 'dataset', 'train')
     npz_files = [os.path.join(train_dir_path, f) for f in os.listdir(train_dir_path) if f.endswith('.npz')]
     save_dir = os.path.join('..','model','transformer_asr')
 
-    num_epochs = 50
+    num_epochs = 5
     for epoch in range(num_epochs):
         model.train()
         total_loss = 0

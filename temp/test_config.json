@@ -1,0 +1,14 @@
+{
+    "model_name": "transformer_asr_51td",
+    "mfcc_feature": 128,
+    "max_sentence_len": 31,
+    "max_mfcc_seqlen": 460,
+    "num_attention_heads": 16,
+    "num_layers": 12,
+    "ffn_hidden_dim": 4096,
+    "vocab_size": 4336,
+    "device": "cuda",
+    "learning_rate": 1e-06,
+    "dataloader_batch_size": 64,
+    "target_loss": 4.5
+}

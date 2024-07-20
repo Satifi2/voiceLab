@@ -1,6 +1,6 @@
 class Config:
     seed = 42
-    model_name = "transformer_asr_51s"
+    model_name = "transformer_asr_51td"
     mfcc_feature = 128
     max_sentence_len = 31
     max_mfcc_seqlen = 460
