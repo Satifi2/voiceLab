@@ -1,7 +1,7 @@
 import os
 import torch
 import json
-import config
+from config import config
 import utils
 from TransformerCTC import TransformerCTC
 from ASRDataset import ASRDataset
@@ -26,6 +26,7 @@ if __name__ == "__main__":
 
     model.load_state_dict(torch.load(model_save_path, map_location=config.device))
     model = model.to(config.device)
+    
     model.eval()
 
     reverse_vocab_path = os.path.join('..', 'data', 'data_aishell', 'preprocessed', 'reverse_vocab.json')

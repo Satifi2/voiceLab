@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
-import config
+from config import config
 from ASRDataset import *
 import utils
 
@@ -59,35 +59,35 @@ class TransformerASR(nn.Module):
 
             return predicted_indices, predicted_words
         
-def predict_(self, encoder_input, reverse_vocab, max_length=config.max_sentence_len):
-    batch_size = encoder_input.size(0)
-    device = encoder_input.device
-    decoder_input = torch.full((batch_size, 1), config.bos_token, dtype=torch.long, device=device)
-    predicted_indices = []
-    for _ in range(max_length):
-        with torch.no_grad():
-            output = self.forward(encoder_input, decoder_input)
-            
-        next_word = output[:, -1, :].argmax(dim=-1).unsqueeze(1)
-        decoder_input = torch.cat([decoder_input, next_word], dim=-1)
-        predicted_indices.append(next_word)
-        if (next_word == config.eos_token).all():
-            break
+    def predict_(self, encoder_input, reverse_vocab, max_length=config.max_sentence_len):
+        batch_size = encoder_input.size(0)
+        device = encoder_input.device
+        decoder_input = torch.full((batch_size, 1), config.bos_token, dtype=torch.long, device=device)
+        predicted_indices = []
+        for _ in range(max_length):
+            with torch.no_grad():
+                output = self.forward(encoder_input, decoder_input)
 
-    predicted_indices = torch.cat(predicted_indices, dim=-1)
-
-    predicted_words = []
-    for i in range(batch_size):
-        words = []
-        for idx in predicted_indices[i]:
-            if idx.item() == config.eos_token:
+            next_word = output[:, -1, :].argmax(dim=-1).unsqueeze(1)
+            decoder_input = torch.cat([decoder_input, next_word], dim=-1)
+            predicted_indices.append(next_word)
+            if (next_word == config.eos_token).all():
                 break
-            words.append(reverse_vocab[str(idx.item())])
-        predicted_words.append(words)
-    return predicted_indices, predicted_words
+
+        predicted_indices = torch.cat(predicted_indices, dim=-1)
+
+        predicted_words = []
+        for i in range(batch_size):
+            words = []
+            for idx in predicted_indices[i]:
+                if idx.item() == config.eos_token:
+                    break
+                words.append(reverse_vocab[str(idx.item())])
+            predicted_words.append(words)
+        return predicted_indices, predicted_words
 
 
-if __name__ == '__main__':
+def model_init(model_save_path='', config_save_path=''):
     model = TransformerASR(
         vocab_size=config.vocab_size,
         d_model=config.mfcc_feature,
@@ -98,13 +98,34 @@ if __name__ == '__main__':
         encoder_seqlen=config.max_mfcc_seqlen,
         decoder_seqlen=config.max_sentence_len
     )
+    learning_rate, model_name, target_loss = config.learning_rate, config.model_name, config.target_loss
+    if model_save_path and config_save_path:
+        utils.load_config(config_save_path)
+        model.load_state_dict(torch.load(model_save_path, map_location=config.device))
+        print(f"The model {config.model_name} is loading")
+        config.learning_rate, config.model_name, config.target_loss= learning_rate, model_name, target_loss
     model = model.to(config.device)
+    return model
+
+
+if __name__ == '__main__':
+    utils.set_seed()
+    model_save_dir = os.path.join('..', 'model','transformer_asr')
+    model_save_path = os.path.join(model_save_dir,'transformer_asr_51_epoch_0.pth')
+    config_save_path = os.path.join(model_save_dir,"transformer_asr_51_config.json")
+    model = model_init(model_save_path,config_save_path)
+
+    #test save
+    save_dir = os.path.join('..','temp')
+    utils.save_model_and_config(model, 999, "test",save_dir)    
+    print(f'{config.model_name} is being trained with learning rate {config.learning_rate}, the target loss is {config.target_loss}')
     # criterion = nn.CrossEntropyLoss(ignore_index=0)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=config.learning_rate)
     
-    train_dir_path = os.path.join('..', 'data', 'data_aishell', 'dataset', 'train')
+    train_dir_path = os.path.join('..', 'data', 'data_aishell', 'dataset', 'test')
     npz_files = [os.path.join(train_dir_path, f) for f in os.listdir(train_dir_path) if f.endswith('.npz')]
+    save_dir = os.path.join('..','model','transformer_asr')
 
     num_epochs = 50
     for epoch in range(num_epochs):
@@ -132,6 +153,8 @@ if __name__ == '__main__':
                 total_loss += loss.item()
                 dataset_loss += loss.item()
             print(f"Epoch {epoch + 1},file:{npz_file},Total Loss: {total_loss / len(npz_files)}, dataset Loss {dataset_loss}")
-        if (epoch+1) % 10 ==0:
-            utils.save_model_and_config(model, epoch, config.model_name)
+            if dataset_loss < config.target_loss:
+                utils.save_model_and_config(model, epoch, config.model_name,save_dir)
+        if (epoch+1) % 5 ==0:
+            utils.save_model_and_config(model, epoch, config.model_name,save_dir)
     

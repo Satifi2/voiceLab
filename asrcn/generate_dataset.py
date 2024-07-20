@@ -10,7 +10,7 @@ import os
 import json
 import librosa
 import numpy as np
-import config
+from config import config
 
 def load_processed_transcripts():
     input_path = os.path.join('..', 'data', 'data_aishell', 'preprocessed', 'processed_transcripts.json')

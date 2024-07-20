@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
-import config
+from config import config
 from ASRDataset import *
 import utils
 
@@ -69,8 +69,8 @@ if __name__ == '__main__':
 
     num_epochs = 1
     num_datasets = 0
-    save_dir = os.path.join('..','model','transformer_ctc')
-    utils.save_model_and_config(model, 0, config.model_name,save_dir)
+    save_dir = os.path.join('..','model','transformer_asr')
+    utils.save_model_and_config(model, 999, config.model_name,save_dir)
     for epoch in range(num_epochs):
         model.train()
         total_loss = 0

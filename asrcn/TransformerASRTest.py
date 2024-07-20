@@ -1,4 +1,4 @@
-import config
+from config import config
 import utils
 from TransformerASR import TransformerASR
 from torch.utils.data import Dataset, DataLoader
@@ -21,11 +21,8 @@ if __name__ == "__main__":
     # model_save_path = os.path.join(model_save_dir,'transformer_asr_norm_epoch_9.pth')
     # config_save_path = os.path.join(model_save_dir,"transformer_asr_norm_config.json")
 
-    model_save_path = os.path.join(model_save_dir,'transformer_asr_50_epoch_9.pth')
-    config_save_path = os.path.join(model_save_dir,"transformer_asr_50_config.json")
-
-    utils.load_config(config_save_path)
-    print(f"the model {config.model_name} is loading")
+    model_save_path = os.path.join(model_save_dir,'transformer_asr_51_epoch_0.pth')
+    config_save_path = os.path.join(model_save_dir,"transformer_asr_51_config.json")
 
     model = TransformerASR(
         vocab_size=config.vocab_size,
@@ -38,6 +35,8 @@ if __name__ == "__main__":
         decoder_seqlen=config.max_sentence_len
     )
 
+    utils.load_config(config_save_path)
+    print(f"the model {config.model_name} is loading")
     model.load_state_dict(torch.load(model_save_path, map_location=config.device))
 
     reverse_vocab_path = os.path.join('..','data','data_aishell','preprocessed','reverse_vocab.json')

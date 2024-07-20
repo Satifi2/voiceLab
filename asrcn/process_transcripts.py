@@ -8,7 +8,7 @@
 
 import os
 import json
-import config
+from config import config
 
 def load_vocab():
     vocab_path = os.path.join('..', 'data', 'data_aishell', 'preprocessed', 'vocab.json')
