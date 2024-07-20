@@ -7,6 +7,7 @@ from torch.utils.data import Dataset, DataLoader
 from config import config
 from ASRDataset import *
 import utils
+import json
 
 class TransformerASR(nn.Module):
     def __init__(self, vocab_size, d_model, nhead, num_encoder_layers, num_decoder_layers, dim_feedforward, encoder_seqlen, decoder_seqlen):
@@ -59,12 +60,12 @@ class TransformerASR(nn.Module):
 
             return predicted_indices, predicted_words
         
-    def predict_(self, encoder_input, reverse_vocab, max_length=config.max_sentence_len):
+    def predict_(self, encoder_input, reverse_vocab):
         batch_size = encoder_input.size(0)
         device = encoder_input.device
         decoder_input = torch.full((batch_size, 1), config.bos_token, dtype=torch.long, device=device)
         predicted_indices = []
-        for _ in range(max_length):
+        for _ in range(config.max_sentence_len):
             with torch.no_grad():
                 output = self.forward(encoder_input, decoder_input)
 
@@ -105,15 +106,19 @@ def model_init(model_save_path='', config_save_path=''):
         print(f"The model {config.model_name} is loading")
         config.learning_rate, config.model_name, config.target_loss= learning_rate, model_name, target_loss
     model = model.to(config.device)
-    return model
+
+    reverse_vocab_path = os.path.join('..','data','data_aishell','preprocessed','reverse_vocab.json')
+    with open(reverse_vocab_path, 'r', encoding='utf-8') as f:
+        reverse_vocab = json.load(f)
+    return model,reverse_vocab
 
 
 if __name__ == '__main__':
     utils.set_seed()
     model_save_dir = os.path.join('..', 'model','transformer_asr')
-    model_save_path = os.path.join(model_save_dir,'transformer_asr_51t_epoch_4.pth')
-    config_save_path = os.path.join(model_save_dir,"transformer_asr_51t_config.json")
-    model = model_init(model_save_path,config_save_path)
+    model_save_path = os.path.join(model_save_dir,'transformer_asr_51_epoch_0.pth')
+    config_save_path = os.path.join(model_save_dir,"transformer_asr_51_config.json")
+    model, reverse_vocab= model_init(model_save_path,config_save_path)
 
     #test save
     save_dir = os.path.join('..','temp')
@@ -142,6 +147,7 @@ if __name__ == '__main__':
                 decoder_expected_output = decoder_expected_output.to(config.device)
 
                 optimizer.zero_grad()
+                # print(encoder_input[0].shape,decoder_input[0],decoder_expected_output[0])
                 output = model(encoder_input, decoder_input)
 
                 output = output.reshape(-1, output.shape[-1])
@@ -153,6 +159,7 @@ if __name__ == '__main__':
                 total_loss += loss.item()
                 dataset_loss += loss.item()
             print(f"Epoch {epoch + 1},file:{npz_file},Total Loss: {total_loss / len(npz_files)}, dataset Loss {dataset_loss}")
+            print(wav_filenames[0],model.predict(encoder_input,decoder_input,reverse_vocab)[1][0])
             if dataset_loss < config.target_loss:
                 utils.save_model_and_config(model, epoch, config.model_name,save_dir)
         if (epoch+1) % 5 ==0:

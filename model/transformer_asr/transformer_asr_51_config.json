@@ -10,5 +10,5 @@
     "device": "cuda",
     "learning_rate": 1e-06,
     "dataloader_batch_size": 64,
-    "target_loss": 5.2
+    "target_loss": 4.0
 }

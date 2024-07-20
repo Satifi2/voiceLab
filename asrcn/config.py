@@ -1,23 +1,27 @@
 class Config:
-    seed = 42
-    model_name = "transformer_asr_51td"
-    mfcc_feature = 128
-    max_sentence_len = 31
-    max_mfcc_seqlen = 460
-    num_attention_heads = 8
-    num_layers = 12
-    ffn_hidden_dim = 4096
-    vocab_size = 4336
-    device = 'cuda'
-    learning_rate = 0.000001
-    dataloader_batch_size = 64
-    dropout = 0.1
-    pad_token = 0
-    bos_token = 1
-    eos_token = 2 
-    target_loss = 4.5
+    def __init__(self):
+        self.seed = 42
+        self.model_name = "transformer_asr_runnable"
+        self.mfcc_feature = 128
+        self.max_sentence_len = 31
+        self.max_mfcc_seqlen = 460
+        self.num_attention_heads = 8
+        self.num_layers = 12
+        self.ffn_hidden_dim = 4096
+        self.vocab_size = 4336
+        self.device = 'cuda'
+        self.learning_rate = 0.000001
+        self.dataloader_batch_size = 64
+        self.dropout = 0
+        self.pad_token = 0
+        self.bos_token = 1
+        self.eos_token = 2 
+        self.target_loss = 4.0
 
     def to_dict(self):
         return {k: v for k, v in self.__dict__.items() if not k.startswith('__')}
 
 config = Config()
+
+if __name__ == '__main__':
+    print(config.to_dict())
