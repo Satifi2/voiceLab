@@ -37,7 +37,7 @@ class TransformerASR(nn.Module):
         
         decoder_input = self.decoder_embedding(decoder_input)
         decoder_input = self.decoder_pos(decoder_input)
-        
+
         transformer_output = self.transformer(
             src=encoder_input,
             tgt=decoder_input,
@@ -48,6 +48,35 @@ class TransformerASR(nn.Module):
         
         output = self.fc_out(transformer_output)
         return output
+        
+    def predict(self, encoder_input, decoder_input, reverse_vocab):
+        batch_size = encoder_input.size(0)
+        device = encoder_input.device
+        decoder_input = torch.full((batch_size, 1), config.bos_token, dtype=torch.long, device=device)
+        predicted_indices = []
+        for _ in range(config.max_sentence_len):
+            with torch.no_grad():
+                output = self.forward(encoder_input, decoder_input)
+            next_word = output[:, -1, :].argmax(dim=-1).unsqueeze(1)
+            # print(encoder_input.shape,decoder_input.shape,output.shape,next_word.shape)
+            decoder_input = torch.cat([decoder_input, next_word], dim=-1)
+            predicted_indices.append(next_word)
+            # print(predicted_indices)
+
+        predicted_indices = torch.cat(predicted_indices, dim=-1)
+        # print(predicted_indices.shape)
+        # print(predicted_indices)
+
+        predicted_words = []
+        for i in range(batch_size):
+            words = []
+            for idx in predicted_indices[i]:
+                if idx != config.pad_token:
+                    words.append(reverse_vocab[str(idx.item())])
+            predicted_words.append(words)
+        return predicted_indices, predicted_words
+    
+
 
     def predict(self, encoder_input, decoder_input, reverse_vocab):
         with torch.no_grad():
@@ -56,36 +85,9 @@ class TransformerASR(nn.Module):
             batch_size, seq_len = predicted_indices.size()
             predicted_words = []
             for i in range(batch_size):
-                predicted_words.append([reverse_vocab[str(idx.item())] for idx in predicted_indices[i]])
+                predicted_words.append([reverse_vocab[str(idx.item())] for idx in predicted_indices[i] if idx != config.pad_token])
 
             return predicted_indices, predicted_words
-        
-    def predict_(self, encoder_input, reverse_vocab):
-        batch_size = encoder_input.size(0)
-        device = encoder_input.device
-        decoder_input = torch.full((batch_size, 1), config.bos_token, dtype=torch.long, device=device)
-        predicted_indices = []
-        for _ in range(config.max_sentence_len):
-            with torch.no_grad():
-                output = self.forward(encoder_input, decoder_input)
-
-            next_word = output[:, -1, :].argmax(dim=-1).unsqueeze(1)
-            decoder_input = torch.cat([decoder_input, next_word], dim=-1)
-            predicted_indices.append(next_word)
-            if (next_word == config.eos_token).all():
-                break
-
-        predicted_indices = torch.cat(predicted_indices, dim=-1)
-
-        predicted_words = []
-        for i in range(batch_size):
-            words = []
-            for idx in predicted_indices[i]:
-                if idx.item() == config.eos_token:
-                    break
-                words.append(reverse_vocab[str(idx.item())])
-            predicted_words.append(words)
-        return predicted_indices, predicted_words
 
 
 def model_init(model_save_path='', config_save_path=''):
@@ -159,7 +161,7 @@ if __name__ == '__main__':
                 total_loss += loss.item()
                 dataset_loss += loss.item()
             print(f"Epoch {epoch + 1},file:{npz_file},Total Loss: {total_loss / len(npz_files)}, dataset Loss {dataset_loss}")
-            print(wav_filenames[0],model.predict(encoder_input,decoder_input,reverse_vocab)[1][0])
+            # print(wav_filenames[0],model.predict(encoder_input,decoder_input,reverse_vocab)[1][0])
             if dataset_loss < config.target_loss:
                 utils.save_model_and_config(model, epoch, config.model_name,save_dir)
         if (epoch+1) % 5 ==0:

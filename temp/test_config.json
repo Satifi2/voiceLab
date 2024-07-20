@@ -15,5 +15,5 @@
     "pad_token": 0,
     "bos_token": 1,
     "eos_token": 2,
-    "target_loss": 4.0
+    "target_loss": 0.0
 }

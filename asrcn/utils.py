@@ -23,7 +23,9 @@ class PositionalEncoding(nn.Module):
         self.register_buffer('pe', pe)
 
     def forward(self, x):
-        return x + self.pe
+        # print("x.shape",x.shape) #torch.Size([64, 460, 128])
+        # print("pe.shape",self.pe.shape) #torch.Size([1, 460, 128])
+        return x + self.pe[:,:x.shape[1],:]
 
 def test_position_encoding():
     d_model = 10
@@ -90,6 +92,18 @@ def load_config(config_path):
         setattr(config, key, value)
     
     print("The configuration is loaded")
+
+def load_transcript(file_path):
+    transcript_dict = {}
+    with open(file_path, 'r', encoding='utf-8') as f:
+        for line in f:
+            parts = line.strip().split()
+            if parts:
+                key = parts[0]
+                value = ''.join(parts[1:])
+                transcript_dict[key] = value
+    return transcript_dict
+
 
 if __name__ == "__main__":
     test_position_encoding()

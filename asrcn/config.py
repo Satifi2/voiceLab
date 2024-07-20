@@ -16,7 +16,7 @@ class Config:
         self.pad_token = 0
         self.bos_token = 1
         self.eos_token = 2 
-        self.target_loss = 4.0
+        self.target_loss = 0.0
 
     def to_dict(self):
         return {k: v for k, v in self.__dict__.items() if not k.startswith('__')}
