@@ -59,6 +59,7 @@ class AishellDataset(Dataset):
         return self.data[idx]
 
 if __name__ == "__main__":
+    print(config.mfcc_feature)
     dataset = AishellDataset('../data/data_aishell/wav/train/S0002')
     print(f"Total number of samples: {len(dataset)}")
     

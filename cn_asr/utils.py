@@ -4,6 +4,12 @@ import torch
 import os
 from config import config
 import json
+import random
+
+def set_seed():
+    np.random.seed(config.seed)
+    random.seed(config.seed)
+    torch.manual_seed(config.seed)
 
 class PositionalEncoding(nn.Module):
     def __init__(self, d_model, max_len=5000):

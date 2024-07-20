@@ -34,7 +34,7 @@ def preprocess_vocab():
                 if char not in vocab:
                     vocab[char] = current_index
                     current_index += 1
-    vocab['blank'] = len(vocab)
+    # vocab['blank'] = len(vocab)
 
     reverse_vocab = {index: char for char, index in vocab.items()}
 

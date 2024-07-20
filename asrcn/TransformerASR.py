@@ -58,6 +58,34 @@ class TransformerASR(nn.Module):
                 predicted_words.append([reverse_vocab[str(idx.item())] for idx in predicted_indices[i]])
 
             return predicted_indices, predicted_words
+        
+def predict_(self, encoder_input, reverse_vocab, max_length=config.max_sentence_len):
+    batch_size = encoder_input.size(0)
+    device = encoder_input.device
+    decoder_input = torch.full((batch_size, 1), config.bos_token, dtype=torch.long, device=device)
+    predicted_indices = []
+    for _ in range(max_length):
+        with torch.no_grad():
+            output = self.forward(encoder_input, decoder_input)
+            
+        next_word = output[:, -1, :].argmax(dim=-1).unsqueeze(1)
+        decoder_input = torch.cat([decoder_input, next_word], dim=-1)
+        predicted_indices.append(next_word)
+        if (next_word == config.eos_token).all():
+            break
+
+    predicted_indices = torch.cat(predicted_indices, dim=-1)
+
+    predicted_words = []
+    for i in range(batch_size):
+        words = []
+        for idx in predicted_indices[i]:
+            if idx.item() == config.eos_token:
+                break
+            words.append(reverse_vocab[str(idx.item())])
+        predicted_words.append(words)
+    return predicted_indices, predicted_words
+
 
 if __name__ == '__main__':
     model = TransformerASR(
