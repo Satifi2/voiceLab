@@ -1,4 +1,4 @@
-class Config:
+class BetterConfig:
     def __init__(self):
         self.seed = 42
         self.model_name = "transformer_ctc_conv"
@@ -6,13 +6,14 @@ class Config:
         self.max_sentence_len = 30
         self.max_mfcc_seqlen = 460
         self.num_attention_heads = 8
+        self.encoder_hidden_dim = 128
         self.num_layers = 12
         self.ffn_hidden_dim = 4096
         self.vocab_size = 4336
         self.device = 'cuda'
-        self.learning_rate = 0.000001
+        self.learning_rate = 0.01
         self.dataloader_batch_size = 64
-        self.dropout = 0.01
+        self.dropout = 0.0001
         self.blank_token = 0
         self.bos_token = 1
         self.eos_token = 2 
@@ -21,7 +22,7 @@ class Config:
     def to_dict(self):
         return {k: v for k, v in self.__dict__.items() if not k.startswith('__')}
 
-config = Config()
+config = BetterConfig()
 
 if __name__ == '__main__':
     print(config.to_dict())
