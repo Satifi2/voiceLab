@@ -41,7 +41,7 @@ class BetterConfig:
         self.beam_size = 3
         self.beam_cut_threshold = 0
         self.device = 'cuda'
-        self.learning_rate = 0.0000001
+        self.learning_rate = 1e-6
         self.dataloader_batch_size = 64
         self.dropout = 0.1
         self.blank_token = 0

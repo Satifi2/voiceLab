@@ -125,7 +125,7 @@ def train(model, criterion, optimizer, device, train_dir_path, save_dir, num_epo
             # break
         print(f"Epoch {epoch+1} completed.")
         # break
-        utils.save_model_and_config(model, epoch+1, config.model_name)
+        utils.save_model_and_config(model, epoch+1, config.model_name, save_dir=os.path.join('..', 'model','conv_transformer'))
 
     print("Training completed.")
 
@@ -136,9 +136,9 @@ if __name__ == '__main__':
     model = ConvTransformerModel().to(device)
 
     print("test saving")
-    utils.save_model_and_config(model, 999, config.model_name)
+    utils.save_model_and_config(model, 999, config.model_name, save_dir=os.path.join('..', 'model','conv_transformer'))
 
-    criterion = nn.CTCLoss(blank=config.blank_token, zero_infinity=True)
+    criterion = nn.CTCLoss(blank=config.blank_token, zero_infinity=True, reduction='mean')
     optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
 
     train_dir_path = os.path.join('..', 'data', 'data_aishell', 'dataset', 'train')
