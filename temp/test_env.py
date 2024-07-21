@@ -1,4 +1,6 @@
 import torch
+import librosa
+import jiwer
 
 # 打印 PyTorch 版本
 print("PyTorch version:", torch.__version__)
@@ -13,3 +15,5 @@ if cuda_available:
     print("Number of GPUs:", torch.cuda.device_count())
     for i in range(torch.cuda.device_count()):
         print(f"GPU {i} name:", torch.cuda.get_device_name(i))
+
+print(jiwer.cer('123415','123425'))
