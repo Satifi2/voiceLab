@@ -12,6 +12,7 @@ def set_seed():
     random.seed(config.seed)
     torch.manual_seed(config.seed)
 
+
 class PositionalEncoding(nn.Module):
     def __init__(self, max_len, d_model):
         super(PositionalEncoding, self).__init__()
@@ -27,6 +28,7 @@ class PositionalEncoding(nn.Module):
         # print("x.shape",x.shape) #torch.Size([64, 460, 128])
         # print("pe.shape",self.pe.shape) #torch.Size([1, 460, 128])
         return x + self.pe[:,:x.shape[1],:]
+
 
 def test_position_encoding():
     d_model = 10
@@ -122,8 +124,17 @@ def model_parameters(model):
     return total_params
 
 
+def create_padding_mask(lengths, max_len):
+    return torch.arange(max_len).to(config.device).expand(len(lengths), max_len) >= lengths.unsqueeze(1)
+
+
+def test_create_pad():
+    lengths = torch.tensor([3,2,1]).to(config.device)
+    print(create_padding_mask(lengths=lengths,max_len=5))
+
+
 if __name__ == "__main__":
     test_position_encoding()
     test_pad_mask()
-    printf("123")
+    test_create_pad()
 
