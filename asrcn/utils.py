@@ -100,14 +100,26 @@ def printf(parameter, comment='',detailed_level =1):
         print(comment, parameter)
 
 
-def print_model_parameters(model):
+def load_transcript(file_path):
+    transcript_dict = {}
+    with open(file_path, 'r', encoding='utf-8') as f:
+        for line in f:
+            parts = line.strip().split()
+            if parts:
+                key = parts[0]
+                value = ''.join(parts[1:])
+                transcript_dict[key] = value
+    print("transcript loaded")
+    return transcript_dict
+
+
+def model_parameters(model):
     total_params = 0
     for name, parameter in model.named_parameters():
         if not parameter.requires_grad: continue
         params = parameter.numel()
-        print(f"Layer: {name} | Parameters: {params}")
         total_params += params
-    print(f"Total Trainable Parameters: {total_params}")
+    return total_params
 
 
 if __name__ == "__main__":

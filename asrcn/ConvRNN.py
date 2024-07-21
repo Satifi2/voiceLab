@@ -90,7 +90,7 @@ def train(model, criterion, optimizer, device, train_dir_path, save_dir, config,
         total_loss = 0
         
         for npz_file in npz_files:
-            dataset = BetterDataset(npz_test_file)
+            dataset = BetterDataset(npz_file)
             dataloader = DataLoader(dataset, batch_size=config.dataloader_batch_size, shuffle=False)#temporal for mistake checking
             dataset_loss = 0
             
@@ -103,14 +103,14 @@ def train(model, criterion, optimizer, device, train_dir_path, save_dir, config,
                 optimizer.zero_grad()
 
                 output, output_lengths = model(source, source_lengths)
-                print("source.shape", source.shape)
-                print("output.shape", output.shape)
+                # print("source.shape", source.shape)
+                # print("output.shape", output.shape)
                 # print("output[0]", output[0])
                 # print("output_lengths", output_lengths)
                 # print("target.shape",target.shape)
                 # print("target_lengths", target_lengths)
-                print(f"prediction: {model.predict(output[:3], output_lengths[:3])}")
-                print(f"groudtruth:{[config.__transcript__[filename] for filename in wav_filenames[:3]]}")
+                # print(f"prediction: {model.predict(output[:3], output_lengths[:3])}")
+                # print(f"groudtruth:{[config.__transcript__[filename] for filename in wav_filenames[:3]]}")
                 output = nn.functional.log_softmax(output, dim=2)
 
                 loss = criterion(output.transpose(0, 1), target, output_lengths, target_lengths)
@@ -122,7 +122,6 @@ def train(model, criterion, optimizer, device, train_dir_path, save_dir, config,
                 total_loss += loss.item()
 
             print(f"Epoch {epoch+1}, File {os.path.basename(npz_file)}, Average Loss: {dataset_loss}")
-            print()
             # break
         print(f"Epoch {epoch+1} completed.")
         # break

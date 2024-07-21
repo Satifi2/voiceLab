@@ -78,6 +78,8 @@ class TransformerASR(nn.Module):
     
 
 
+
+
     def predict(self, encoder_input, decoder_input, reverse_vocab):
         with torch.no_grad():
             output = self.forward(encoder_input, decoder_input)
@@ -105,7 +107,7 @@ def model_init(model_save_path='', config_save_path=''):
     if model_save_path and config_save_path:
         utils.load_config(config_save_path)
         model.load_state_dict(torch.load(model_save_path, map_location=config.device))
-        print(f"The model {config.model_name} is loading")
+        print(f"The model {config.model_name} is loading, the total parameter is {utils.model_parameters(model)}")
         config.learning_rate, config.model_name, config.target_loss= learning_rate, model_name, target_loss
     model = model.to(config.device)
 
