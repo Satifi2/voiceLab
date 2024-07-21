@@ -1,19 +1,22 @@
 {
     "seed": 42,
-    "model_name": "transformer_asr_runnable",
+    "model_name": "transformer_asr_51",
     "mfcc_feature": 128,
     "max_sentence_len": 31,
     "max_mfcc_seqlen": 460,
     "num_attention_heads": 16,
+    "encoder_hidden_dim": 128,
     "num_layers": 12,
     "ffn_hidden_dim": 4096,
     "vocab_size": 4336,
+    "beam_size": 3,
+    "beam_cut_threshold": 0.0002,
     "device": "cuda",
     "learning_rate": 1e-06,
     "dataloader_batch_size": 64,
-    "dropout": 0,
-    "pad_token": 0,
+    "dropout": 0.0001,
+    "blank_token": 0,
     "bos_token": 1,
     "eos_token": 2,
-    "target_loss": 0.0
+    "target_loss": 4.0
 }

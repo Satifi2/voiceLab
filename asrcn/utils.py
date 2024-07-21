@@ -2,9 +2,10 @@ import torch.nn as nn
 import numpy as np
 import torch 
 import os
-from config import config
+from BetterConfig import config
 import json
 import random
+import inspect
 
 def set_seed():
     np.random.seed(config.seed)
@@ -33,7 +34,7 @@ def test_position_encoding():
     pos_encoder = PositionalEncoding(max_len, d_model)
 
     batch_size = 2
-    x = torch.zeros(batch_size,max_len, d_model)
+    x = torch.zeros(batch_size,max_len, d_model).to(config.device)
 
     x_encoded = pos_encoder(x)
 
@@ -93,19 +94,24 @@ def load_config(config_path):
     
     print("The configuration is loaded")
 
-def load_transcript(file_path):
-    transcript_dict = {}
-    with open(file_path, 'r', encoding='utf-8') as f:
-        for line in f:
-            parts = line.strip().split()
-            if parts:
-                key = parts[0]
-                value = ''.join(parts[1:])
-                transcript_dict[key] = value
-    return transcript_dict
+
+def printf(parameter, comment='',detailed_level =1):
+    if detailed_level == config.__debugmode__ :
+        print(comment, parameter)
+
+
+def print_model_parameters(model):
+    total_params = 0
+    for name, parameter in model.named_parameters():
+        if not parameter.requires_grad: continue
+        params = parameter.numel()
+        print(f"Layer: {name} | Parameters: {params}")
+        total_params += params
+    print(f"Total Trainable Parameters: {total_params}")
 
 
 if __name__ == "__main__":
     test_position_encoding()
     test_pad_mask()
+    printf("123")
 
