@@ -12,27 +12,25 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 class ConvTransformerModel(nn.Module):
     def __init__(self):
         super(ConvTransformerModel, self).__init__()
-        self.conv = nn.Sequential(
-            
-            nn.Conv1d(in_channels=config.mfcc_feature, out_channels=64, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm1d(64),
-            nn.SiLU(),
-            nn.MaxPool1d(kernel_size=2, stride=2),  # Reduces length by 2
-            
-            nn.Conv1d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm1d(128),
-            nn.SiLU(),
-            nn.MaxPool1d(kernel_size=2, stride=2),  # Reduces length by 2
-            
-            nn.Conv1d(in_channels=128, out_channels=256, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm1d(256),
-            nn.SiLU(),
-            # nn.MaxPool1d(kernel_size=2, stride=2),  # Reduces length by 2
-            
-            nn.Conv1d(in_channels=256, out_channels=512, kernel_size=1, stride=1)
-        )
         
-        self.pos_encoder = utils.PositionalEncoding(max_len=config.max_mfcc_seqlen, d_model= config.model_dim)
+        # Convolutional layers
+        self.conv1 = nn.Conv1d(in_channels=config.mfcc_feature, out_channels=256, kernel_size=3, stride=1, padding=1)
+        self.conv2 = nn.Conv1d(in_channels=256, out_channels=512, kernel_size=3, stride=1, padding=1)
+        self.conv3 = nn.Conv1d(in_channels=512, out_channels=1024, kernel_size=3, stride=1, padding=1)
+        self.conv4 = nn.Conv1d(in_channels=1024, out_channels=2048, kernel_size=1, stride=1)
+        
+        # Pooling layers
+        self.pool1 = nn.MaxPool1d(kernel_size=2, stride=2)
+        self.pool2 = nn.MaxPool1d(kernel_size=2, stride=2)
+        
+        # Activation function
+        self.silu = nn.SiLU()
+        
+        # Dropout
+        self.dropout = nn.Dropout(p=0.1)  # You can adjust the dropout rate
+        
+        # Rest of the model
+        self.pos_encoder = utils.PositionalEncoding(max_len=config.max_mfcc_seqlen, d_model=config.model_dim)
         encoder_layer = nn.TransformerEncoderLayer(
                         d_model=config.model_dim,
                         nhead=config.num_attention_heads,
@@ -41,11 +39,11 @@ class ConvTransformerModel(nn.Module):
                         batch_first=True)
         self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=config.num_layers)
         self.fc = nn.Linear(config.model_dim, config.vocab_size)
-        
 
     def get_conv_out_lens(self, input_lengths):
+        # This method remains the same
         seq_lens = input_lengths.clone()
-        for m in self.conv.modules():
+        for m in [self.conv1, self.pool1, self.conv2, self.pool2, self.conv3, self.conv4]:
             if isinstance(m, (nn.Conv1d, nn.MaxPool1d)):
                 padding = m.padding if isinstance(m.padding, int) else m.padding[0]
                 dilation = m.dilation if isinstance(m.dilation, int) else m.dilation[0]
@@ -56,16 +54,72 @@ class ConvTransformerModel(nn.Module):
         return seq_lens.int()
 
     def forward(self, input, input_lengths):
+        # Convolutional layers with residual connections and dropout
         input = input.transpose(1, 2)
-        input = self.conv(input)
-        input = input.transpose(1, 2)
+        
+        # First conv block
+        x = self.conv1(input)
+        x = self.silu(x)
+        x = self.dropout(x)
+        x = self.pool1(x)
+        # residual = x
+        
+        # Second conv block
+        x = self.conv2(x)
+        x = self.silu(x)
+        x = self.dropout(x)
+        x = self.pool2(x)
+        # x = x + nn.functional.interpolate(residual, size=x.shape[2], mode='linear', align_corners=False)
+        # residual = x
+        
+        # Third conv block
+        x = self.conv3(x)
+        x = self.silu(x)
+        x = self.dropout(x)
+        # x = x + residual
+        # residual = x
+        
+        # Fourth conv block
+        x = self.conv4(x)
+        x = self.silu(x)
+        x = self.dropout(x)
+        # x = x + nn.functional.interpolate(residual, size=x.shape[2], mode='linear', align_corners=False)
+        
+        # Transpose back
+        x = x.transpose(1, 2)
+        
+        # Get conv output lengths
         conv_out_lens = self.get_conv_out_lens(input_lengths)
-        padding_mask = utils.create_padding_mask(conv_out_lens, input.size(1))
-        input = self.pos_encoder(input)
-        output = self.transformer_encoder(input, src_key_padding_mask=padding_mask)
+        
+        # Create padding mask
+        padding_mask = utils.create_padding_mask(conv_out_lens, x.size(1))
+        
+        # Positional encoding
+        x = self.pos_encoder(x)
+        
+        # Transformer encoder
+        output = self.transformer_encoder(x, src_key_padding_mask=padding_mask)
+        
+        # Final linear layer
         logits = self.fc(output)
+        
         return logits, conv_out_lens
-    
+        
+
+    def get_conv_out_lens(self, input_lengths):
+        # This method remains the same
+        seq_lens = input_lengths.clone()
+        for m in [self.conv1, self.pool1, self.conv2, self.pool2, self.conv3, self.conv4]:
+            if isinstance(m, (nn.Conv1d, nn.MaxPool1d)):
+                padding = m.padding if isinstance(m.padding, int) else m.padding[0]
+                dilation = m.dilation if isinstance(m.dilation, int) else m.dilation[0]
+                kernel_size = m.kernel_size if isinstance(m.kernel_size, int) else m.kernel_size[0]
+                stride = m.stride if isinstance(m.stride, int) else m.stride[0]
+
+                seq_lens = ((seq_lens + 2 * padding - dilation * (kernel_size - 1) - 1) // stride) + 1
+        return seq_lens.int()
+
+
     def predict(self, output, output_lengths):
         # print("output in predict", output)
         # print("output_lengths in predict", output_lengths)
@@ -138,8 +192,10 @@ if __name__ == '__main__':
     print("test saving")
     utils.save_model_and_config(model, 999, config.model_name, save_dir=os.path.join('..', 'model','conv_transformer'))
 
-    criterion = nn.CTCLoss(blank=config.blank_token, zero_infinity=True, reduction='mean')
-    optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
+    criterion = nn.CTCLoss(blank=config.blank_token, reduction='mean')
+    optimizer = torch.optim.SGD(model.parameters(), lr=config.learning_rate, weight_decay=1e-5)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=2)
+    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1)
 
     train_dir_path = os.path.join('..', 'data', 'data_aishell', 'dataset', 'train')
     save_dir = os.path.join('..', 'model', 'conv_transformer')
