@@ -24,7 +24,7 @@ class BetterDataset(Dataset):
 
 def test_asr_dataset(dataloader):    
     for wav_filenames, source, target, source_valid, target_valid in dataloader:
-        source_lengths, target_lengths = torch.sum(source_valid, dim=1), torch.sum(target_valid, 1)
+        source_lengths, target_lengths = torch.sum(source_valid, dim=1), torch.sum(target_valid, dim=1)
         print("WAV Filenames:", wav_filenames[:3])
         print("Encoder Input:", source[0],source.shape)
         print("Decoder Input:", target[0],target.shape)
