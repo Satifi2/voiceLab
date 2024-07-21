@@ -43,19 +43,48 @@ vscode:remote develepment插件，配置文件里写用户名和主机名，连�
 
 #### 关键运行截图
 
-数据集预处理
+###### 数据集预处理
 
-![image-20240713132715827](./assets/image-20240713132715827.png)
+![image-20240718001830508](./assets/image-20240718001830508-1721483330303-5.png)
 
-#### 
+##### transformer-crossentropy
 
-### 参考论文汇总
+![image-20240716002755147](./assets/image-20240716002755147-1721483271143-3.png)
 
-#### 汉语不建议分词
+初步测试
+
+![image-20240718001327088](./assets/image-20240718001327088-1721483198682-1.png)
+
+cer
+
+![image-20240720215221041](./assets/image-20240720215221041.png)
+
+##### transformer-ctc
+
+![image-20240717205042758](./assets/image-20240717211810551.png)
+
+
+
+
+
+
+
+#### 参考论文汇总
+
+##### 汉语不建议分词
 
 [1905.05526 Is Word Segmentation Necessary for Deep Learning of Chinese Representations? (arxiv.org)](https://ar5iv.labs.arxiv.org/html/1905.05526)
 
-![image-20240713002051805](./assets/image-20240713002051805.png)
+![image-20240721143418923](./assets/image-20240721143418923.png)
 
-#### 
+##### NEURAL MACHINE TRANSLATION
 
+[[1409.0473\] Neural Machine Translation by Jointly Learning to Align and Translate (arxiv.org)](https://ar5iv.labs.arxiv.org/html/1409.0473)
+
+![image-20240720215956249](./assets/image-20240720215956249.png)
+
+![image-20240721014603417](./../../ppt/assets/image-20240721014603417.png)
+
+##### transformer
+
+![image-20240720130019301](./assets/image-20240720130019301.png)
