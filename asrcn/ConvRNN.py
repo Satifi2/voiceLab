@@ -9,29 +9,25 @@ from BetterDataset import BetterDataset
 from fast_ctc_decode import beam_search
 import utils
 
-class ConvTransformer(nn.Module):
+class ConvRNN(nn.Module):
     def __init__(self, input_features, rnn_hidden_size, rnn_type='lstm'):
-        super(ConvTransformer, self).__init__()
+        super(ConvRNN, self).__init__()
         encoder_hidden_dim = config.encoder_hidden_dim
         self.conv = nn.Sequential(
             nn.Conv1d(in_channels=input_features, out_channels=encoder_hidden_dim, kernel_size=3, stride=1, padding=1),
             # nn.BatchNorm1d(encoder_hidden_dim),
-            nn.ReLU(),
+            # nn.ReLU(),
             nn.Conv1d(in_channels=encoder_hidden_dim, out_channels=encoder_hidden_dim, kernel_size=8, stride=6, padding=1),
             # nn.BatchNorm1d(encoder_hidden_dim),
-            nn.ReLU()
+            # nn.ReLU()
         )
 
         if rnn_type == 'rnn':
-            self.rnn = nn.RNN(input_size=encoder_hidden_dim, hidden_size=rnn_hidden_size, batch_first=True)
+            self.rnn = nn.RNN(input_size=encoder_hidden_dim, hidden_size=rnn_hidden_size, batch_first=True, num_layers=config.num_layers)
         elif rnn_type == 'gru':
-            self.rnn = nn.GRU(input_size=encoder_hidden_dim, hidden_size=rnn_hidden_size, batch_first=True)
+            self.rnn = nn.GRU(input_size=encoder_hidden_dim, hidden_size=rnn_hidden_size, batch_first=True, num_layers=config.num_layers)
         elif rnn_type == 'lstm':
-            self.rnn = nn.LSTM(input_size=encoder_hidden_dim, hidden_size=rnn_hidden_size, batch_first=True)
-        elif rnn_type == 'transformer':
-            encoder_layer = nn.TransformerEncoderLayer(d_model=128, nhead=config.num_attention_heads, 
-                                                       dim_feedforward=config.ffn_hidden_dim, dropout=config.dropout)
-            self.rnn = nn.TransformerEncoder(encoder_layer, num_layers=config.num_layers)
+            self.rnn = nn.LSTM(input_size=encoder_hidden_dim, hidden_size=rnn_hidden_size, batch_first=True, num_layers=config.num_layers)
         else:
             raise ValueError(f"Unsupported RNN type: {rnn_type}")
         
@@ -45,7 +41,7 @@ class ConvTransformer(nn.Module):
         return seq_lens.int()
 
     def forward(self, input, input_lengths):
-        utils.printf(input.shape, "input.shape before", 2)
+        # print("input.shape before", input.shape)
         input = input.transpose(1, 2)
         input = self.conv(input)
 
@@ -53,8 +49,8 @@ class ConvTransformer(nn.Module):
 
         conv_out_lens = self.get_conv_out_lens(input_lengths)
 
-        utils.printf(input.shape, "input.shape after",2)
-        utils.printf(conv_out_lens,"conv_out_lens", 2)
+        # print("input.shape after", input.shape)
+        # print("conv_out_lens", conv_out_lens)
 
         packed_input = pack_padded_sequence(input, conv_out_lens, batch_first=True, enforce_sorted=False)
 
@@ -63,15 +59,15 @@ class ConvTransformer(nn.Module):
         else:
             packed_output, _ = self.rnn(packed_input)
             output, _ = pad_packed_sequence(packed_output, batch_first=True)
-            utils.printf(output[0], "pad_packed_sequence output",-1)
+            # print("pad_packed_sequence output", output[0])
 
         output = self.fc(output)
 
         return output, conv_out_lens
     
     def predict(self, output, output_lengths):
-        utils.printf(output, "output in predict", 1)
-        utils.printf(output_lengths, "output_lengths in predict", 1)
+        # print("output in predict", output)
+        # print("output_lengths in predict", output_lengths)
         with torch.no_grad():
             result = []
             posteriors = torch.nn.functional.softmax(output, dim=-1)
@@ -88,14 +84,14 @@ class ConvTransformer(nn.Module):
 
 def train(model, criterion, optimizer, device, train_dir_path, save_dir, config, num_epochs=5):
     npz_files = [os.path.join(train_dir_path, f) for f in os.listdir(train_dir_path) if f.endswith('.npz')]
-    
+    npz_test_file = os.path.join(train_dir_path, 'S0002.npz')
     for epoch in range(num_epochs):
         model.train()
         total_loss = 0
         
         for npz_file in npz_files:
-            dataset = BetterDataset(npz_file)
-            dataloader = DataLoader(dataset, batch_size=config.dataloader_batch_size, shuffle=True)
+            dataset = BetterDataset(npz_test_file)
+            dataloader = DataLoader(dataset, batch_size=config.dataloader_batch_size, shuffle=False)#temporal for mistake checking
             dataset_loss = 0
             
             for wav_filenames, source, target, source_valid, target_valid in dataloader:
@@ -107,12 +103,14 @@ def train(model, criterion, optimizer, device, train_dir_path, save_dir, config,
                 optimizer.zero_grad()
 
                 output, output_lengths = model(source, source_lengths)
-                utils.printf(source.shape, "source.shape", 1)
-                utils.printf(output.shape, "output.shape", 1)
-                utils.printf(output[0], "output[0]", 1)
-                utils.printf(output_lengths, "output_lengths", 1)
-                utils.printf(target.shape, "target.shape", 1)
-                utils.printf(target_lengths, "target_lengths", 1)
+                print("source.shape", source.shape)
+                print("output.shape", output.shape)
+                # print("output[0]", output[0])
+                # print("output_lengths", output_lengths)
+                # print("target.shape",target.shape)
+                # print("target_lengths", target_lengths)
+                print(f"prediction: {model.predict(output[:3], output_lengths[:3])}")
+                print(f"groudtruth:{[config.__transcript__[filename] for filename in wav_filenames[:3]]}")
                 output = nn.functional.log_softmax(output, dim=2)
 
                 loss = criterion(output.transpose(0, 1), target, output_lengths, target_lengths)
@@ -122,10 +120,8 @@ def train(model, criterion, optimizer, device, train_dir_path, save_dir, config,
 
                 dataset_loss += loss.item()
                 total_loss += loss.item()
-                break
+
             print(f"Epoch {epoch+1}, File {os.path.basename(npz_file)}, Average Loss: {dataset_loss}")
-            print(f"prediction: {model.predict(output[:3], output_lengths[:3])}")
-            print(f"groudtruth:{[config.__transcript__[filename] for filename in wav_filenames[:3]]}")
             print()
             # break
         print(f"Epoch {epoch+1} completed.")
@@ -136,19 +132,15 @@ def train(model, criterion, optimizer, device, train_dir_path, save_dir, config,
 if __name__ == '__main__':
     device = torch.device(config.device if torch.cuda.is_available() else "cpu")
 
-    # Initialize model
-    model = ConvTransformer(input_features=config.mfcc_feature, 
+    model = ConvRNN(input_features=config.mfcc_feature, 
                          rnn_hidden_size=config.encoder_hidden_dim, 
                          rnn_type='lstm').to(device)
 
-    # Initialize loss and optimizer
     criterion = nn.CTCLoss(blank=config.blank_token, zero_infinity=True)
     optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
 
-    # Set up paths
     train_dir_path = os.path.join('..', 'data', 'data_aishell', 'dataset', 'train')
     save_dir = os.path.join('..', 'model', 'conv_transformer')
     os.makedirs(save_dir, exist_ok=True)
 
-    # Train the model
     train(model, criterion, optimizer, device, train_dir_path, save_dir, config, num_epochs=5)
