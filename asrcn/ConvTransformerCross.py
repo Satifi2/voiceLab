@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from FinnalConfig import config
-from FinalDataset import FinalDataset
+from FinalDataset import *
 import utils
 import torch.nn.functional as F
 
@@ -11,6 +11,25 @@ import torch.nn.functional as F
 class ConvTransformerCross(nn.Module):
     def __init__(self):
         super(ConvTransformerCross, self).__init__()
+        self.conv = nn.Sequential(
+            nn.Conv1d(in_channels=config.mfcc_feature, out_channels=64, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm1d(64),
+            nn.SiLU(),
+            nn.MaxPool1d(kernel_size=2, stride=2),  # Reduces length by 2
+            
+            nn.Conv1d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm1d(128),
+            nn.SiLU(),
+            nn.MaxPool1d(kernel_size=2, stride=2),  # Reduces length by 2
+            
+            nn.Conv1d(in_channels=128, out_channels=256, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm1d(256),
+            nn.SiLU(),
+            # nn.MaxPool1d(kernel_size=2, stride=2),  # Reduces length by 2
+            
+            nn.Conv1d(in_channels=256, out_channels=512, kernel_size=1, stride=1)
+        )
+
         self.encoder_pos = utils.PositionalEncoding(config.max_mfcc_seqlen, config.model_dim)
         self.decoder_embedding = nn.Embedding(config.vocab_size, config.model_dim, padding_idx=0).to(config.device)
         self.decoder_pos = utils.PositionalEncoding(config.max_sentence_len, config.model_dim)
@@ -25,18 +44,23 @@ class ConvTransformerCross(nn.Module):
             batch_first=True
         ).to(config.device)
         self.fc_out = nn.Linear(config.model_dim, config.vocab_size).to(config.device)
+        
     
-    def forward(self, encoder_input, decoder_input):
+    def forward(self, encoder_input, decoder_input, source_lengths, target_lengths):
         encoder_input = self.encoder_pos(encoder_input)
         decoder_input = self.decoder_embedding(decoder_input)
         decoder_input = self.decoder_pos(decoder_input)
+        input = self.conv(encoder_input)
+        input_lengths = self.get_conv_out_lens(source_lengths)
+        src_padding_mask = create_padding_mask(input_lengths, input.shape[1])
+        src_padding_mask = create_padding_mask(target_lengths, decoder_input.shape[1])
 
         transformer_output = self.transformer(
             src=encoder_input,
             tgt=decoder_input,
-            src_key_padding_mask=encoder_input_pad,  
-            tgt_key_padding_mask=decoder_input_pad, 
-            memory_key_padding_mask=encoder_input_pad  
+            src_key_padding_mask=src_padding_mask,  
+            tgt_key_padding_mask=src_padding_mask, 
+            memory_key_padding_mask=src_padding_mask  
         )
         
         output = self.fc_out(transformer_output)
@@ -70,6 +94,19 @@ class ConvTransformerCross(nn.Module):
         return predicted_indices, predicted_words
     
 
+    def get_conv_out_lens(self, input_lengths):
+        seq_lens = input_lengths.clone()
+        for m in [self.conv1, self.pool1, self.conv2, self.pool2, self.conv3, self.conv4]:
+            if isinstance(m, (nn.Conv1d, nn.MaxPool1d)):
+                padding = m.padding if isinstance(m.padding, int) else m.padding[0]
+                dilation = m.dilation if isinstance(m.dilation, int) else m.dilation[0]
+                kernel_size = m.kernel_size if isinstance(m.kernel_size, int) else m.kernel_size[0]
+                stride = m.stride if isinstance(m.stride, int) else m.stride[0]
+
+                seq_lens = ((seq_lens + 2 * padding - dilation * (kernel_size - 1) - 1) // stride) + 1
+        return seq_lens
+    
+
     def predict(self, encoder_input, decoder_input, reverse_vocab):
         with torch.no_grad():
             output = self.forward(encoder_input, decoder_input)
@@ -90,6 +127,41 @@ def model_init(model_save_path='', config_save_path=''):
         print(f"The model's total parameter is {utils.model_parameters(model)}")
     return model
 
+def compute_loss(output, target, target_lengths):
+    loss = 0
+    batch_size = output.size(0)
+    for i in range(batch_size):
+        valid_length = target_lengths[i]
+        valid_output = output[i, :valid_length, :]
+        valid_target = target[i, :valid_length]
+        loss += config.criterion(valid_output, valid_target)
+    return loss / batch_size 
+
+def train(model, num_epochs = 5):
+    optimizer = nn.optim.Adam(model.parameters(), lr=config.learning_rate__)
+    train_dir_path = os.path.join('..', 'data', 'data_aishell', 'dataset', 'train')
+    npz_files = [os.path.join(train_dir_path, f) for f in os.listdir(train_dir_path) if f.endswith('.npz')]
+    for epoch in range(num_epochs):
+        model.train()
+        total_loss = 0
+        for npz_file in npz_files:
+            dataset = FinalDataset(npz_file)
+            dataloader = DataLoader(dataset, batch_size=config.dataloader_batch_size, shuffle=True)
+            dataset_loss = 0
+            for wav_filenames, source, decoder_input, target, source_invalid, target_invalid, source_lengths, target_lengths in dataloader:
+                optimizer.zero_grad()
+                output = model(source, decoder_input, source_lengths,target_lengths)
+                loss = compute_loss(output, target, target_lengths)
+                loss.backward()
+                optimizer.step()
+
+                total_loss += loss.item()
+                dataset_loss += loss.item()
+            print(f"Epoch {epoch + 1},file:{npz_file},Total Loss: {total_loss / len(npz_files)}, dataset Loss {dataset_loss}")
+            if dataset_loss < config.target_loss:
+                utils.save_model_and_config(model, epoch, config.model_name__,model_save_dir)
+        if (epoch+1) % 5 ==0:
+            utils.save_model_and_config(model, epoch, config.model_name__,model_save_dir)
 
 if __name__ == '__main__':
     utils.set_seed()
@@ -103,41 +175,7 @@ if __name__ == '__main__':
     utils.save_model_and_config(model, 999, "test",save_dir)    
     print(f'{config.model_name__} is being trained with learning rate {config.learning_rate__}, the target loss is {config.target_loss__}')
     
-    optimizer = nn.optim.Adam(model.parameters(), lr=config.learning_rate__)
-    
-    train_dir_path = os.path.join('..', 'data', 'data_aishell', 'dataset', 'train')
-    npz_files = [os.path.join(train_dir_path, f) for f in os.listdir(train_dir_path) if f.endswith('.npz')]
+    train(model=model)
 
-    num_epochs = 5
-    for epoch in range(num_epochs):
-        model.train()
-        total_loss = 0
-        for npz_file in npz_files:
-            dataset = FinalDataset(npz_file)
-            dataloader = DataLoader(dataset, batch_size=config.dataloader_batch_size, shuffle=True)
-            dataset_loss = 0
-            for batch in dataloader:
-                wav_filenames, encoder_input, decoder_input, decoder_expected_output = batch
-                encoder_input = encoder_input.to(config.device)
-                decoder_input = decoder_input.to(config.device)
-                decoder_expected_output = decoder_expected_output.to(config.device)
 
-                optimizer.zero_grad()
-                # print(encoder_input[0].shape,decoder_input[0],decoder_expected_output[0])
-                output = model(encoder_input, decoder_input)
-
-                output = output.reshape(-1, output.shape[-1])
-                decoder_expected_output = decoder_expected_output.reshape(-1)
-                loss = config.criterion(output, decoder_expected_output)
-                loss.backward()
-                optimizer.step()
-
-                total_loss += loss.item()
-                dataset_loss += loss.item()
-            print(f"Epoch {epoch + 1},file:{npz_file},Total Loss: {total_loss / len(npz_files)}, dataset Loss {dataset_loss}")
-            # print(wav_filenames[0],model.predict(encoder_input,decoder_input,reverse_vocab)[1][0])
-            if dataset_loss < config.target_loss:
-                utils.save_model_and_config(model, epoch, config.model_name__,model_save_dir)
-        if (epoch+1) % 5 ==0:
-            utils.save_model_and_config(model, epoch, config.model_name__,model_save_dir)
     

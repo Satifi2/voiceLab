@@ -134,10 +134,12 @@ def test_create_pad():
     lengths = torch.tensor([3,2,1]).to(config.device)
     print(create_padding_mask(lengths=lengths,max_len=5))
 
+
 def generate_square_subsequent_mask(sz):
     mask = (torch.triu(torch.ones(sz, sz)) == 1).transpose(0, 1)
     mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
     return mask
+
 
 if __name__ == "__main__":
     test_position_encoding()

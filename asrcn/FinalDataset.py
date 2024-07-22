@@ -9,12 +9,6 @@ def create_padding_mask(lengths, max_len):
     return torch.arange(max_len).expand(len(lengths), max_len).to(config.device) >= lengths.unsqueeze(1)
 
 
-def generate_square_subsequent_mask(sz):
-    mask = (torch.triu(torch.ones(sz, sz)) == 1).transpose(0, 1)
-    mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
-    return mask
-
-
 class FinalDataset(Dataset):
     def __init__(self, npz_file):
         data = np.load(npz_file)
@@ -48,13 +42,13 @@ class FinalDataset(Dataset):
 
 
 def test_dataset(dataloader):    
-    for wav_filenames, source, decoder_input, target, source_valid, target_valid, source_lengths, target_lengths in dataloader:
+    for wav_filenames, source, decoder_input, target, source_invalid, target_invalid, source_lengths, target_lengths in dataloader:
         print("WAV Filenames:", wav_filenames[:3])
         print("Encoder Input:", source[0],source.shape)
         print("decoder_input", decoder_input[0], decoder_input.shape)
         print("Decoder Input:", target[0],target.shape)
-        print("source_valid:", source_valid[0])
-        print("target_valid:", target_valid[0])
+        print("source_invalid:", source_invalid[0])
+        print("target_invalid:", target_invalid[0])
         print("target_lengths to target mask",create_padding_mask(target_lengths, target.shape[1])[0])
         print("source_lengths", source_lengths)
         print("target_lengths", target_lengths)
