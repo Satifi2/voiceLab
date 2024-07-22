@@ -171,9 +171,10 @@ def train(model, num_epochs = 5):
             print(f"Epoch {epoch + 1},file:{npz_file},Total Loss: {total_loss / len(npz_files)}, dataset Loss {dataset_loss}")
             if dataset_loss < config.target_loss__:
                 Utils.save_model(model, config.model_name__, epoch, model_save_dir)
-        if (epoch+1) % 5 ==0:
-            Utils.save_model(model, config.model_name__, epoch, model_save_dir)
 
+        Utils.save_model(model, config.model_name__, epoch, model_save_dir)
+        scheduler.step()
+        print(f"Epoch {epoch}, Learning Rate: {optimizer.param_groups[0]['lr']}")
 
 if __name__ == '__main__':
     utils.set_seed()
