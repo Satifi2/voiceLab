@@ -7,7 +7,7 @@ def load_vocab(vocab_dir):
         vocab = json.load(f)
     with open(os.path.join(vocab_dir,'reverse_vocab.json'), 'r', encoding='utf-8') as f:
         reverse_vocab = json.load(f)
-    vocab_list = [reverse_vocab[str(key)] for key in range(2000)]#临时更改1
+    vocab_list = [reverse_vocab[str(key)] for key in range(config.vocab_size)]#临时更改1
     print("vocab loaded")
     return vocab, reverse_vocab, vocab_list
 
