@@ -1,6 +1,6 @@
 import os
 import json
-
+import torch.nn as nn
 
 def load_vocab(vocab_dir):
     with open(os.path.join(vocab_dir,'vocab.json'), 'r', encoding='utf-8') as f:
@@ -28,26 +28,27 @@ def load_transcript(file_path):
 class FinnalConfig:
     def __init__(self):
         self.seed = 42
-        self.model_name = "transformer_conv_cross"
+        self.model_name__ = "transformer_conv_cross"
         self.mfcc_feature = 128
         self.max_sentence_len = 31
         self.max_mfcc_seqlen = 460
         self.num_attention_heads = 8
         self.model_dim = 512
-        self.num_layers = 4
-        self.ffn_hidden_dim = 8192*2
+        self.num_layers = 12
+        self.ffn_hidden_dim = 8192
         self.vocab_size = 4336
         self.device = 'cuda'
-        self.learning_rate = 1e-4
+        self.learning_rate__ = 1e-4
         self.weight_decay = 1e-5
-        self.dataloader_batch_size = 100
+        self.dataloader_batch_size = 64
         self.dropout = 0.1
         self.pad_token = 0
         self.bos_token = 1
         self.eos_token = 2 
-        self.target_loss = 0.0
+        self.target_loss__ = 0.0
         self.__vocab__, self.__reverse_vocab__, self.__vocab_list__ = load_vocab(os.path.join('..','data','data_aishell','preprocessed'))
         self.__transcript__ = load_transcript('../data/data_aishell/transcript/aishell_transcript_v0.8.txt')
+        self.criterion = nn.CrossEntropyLoss(ignore_index=self.pad_token)
 
     def to_dict(self):
         return {k: v for k, v in self.__dict__.items() if not k.startswith('__')}

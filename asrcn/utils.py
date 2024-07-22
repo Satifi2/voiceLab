@@ -92,9 +92,11 @@ def load_config(config_path):
         config_data = json.load(f)
     
     for key, value in config_data.items():
-        setattr(config, key, value)
+        if not key.endswith('__'):
+            setattr(config, key, value)
+        if key == 'model__name__':
+            print(f"The configuration of {value} is loaded")
     
-    print("The configuration is loaded")
 
 
 def printf(parameter, comment='',detailed_level =1):
