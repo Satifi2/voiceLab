@@ -85,7 +85,7 @@ def save_model_and_config(model, epoch, model_name, save_dir=os.path.join('..','
     with open(config_save_path, 'w') as f:
         json.dump(config.to_dict(), f, indent=4)
     print(f"Configuration saved to {config_save_path}")
-
+    
 
 def load_config(config_path):
     with open(config_path, 'r') as f:

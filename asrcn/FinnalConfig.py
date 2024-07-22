@@ -8,7 +8,7 @@ def load_vocab(vocab_dir):
     with open(os.path.join(vocab_dir,'reverse_vocab.json'), 'r', encoding='utf-8') as f:
         reverse_vocab = json.load(f)
     vocab_list = [reverse_vocab[str(key)] for key in reverse_vocab.keys()]
-    print("vocab loaded")
+    print(f"{__name__}: vocab loaded")
     return vocab, reverse_vocab, vocab_list
 
 
@@ -21,7 +21,7 @@ def load_transcript(file_path):
                 key = parts[0]
                 value = ''.join(parts[1:])
                 transcript_dict[key] = value
-    print("transcript loaded")
+    print(f"{__name__}: transcript loaded")
     return transcript_dict
 
 
@@ -38,8 +38,8 @@ class FinnalConfig:
         self.ffn_hidden_dim = 8192
         self.vocab_size = 4336
         self.device = 'cuda'
-        self.learning_rate__ = 1e-4
-        self.weight_decay = 1e-5
+        self.learning_rate__ = 1e-5
+        self.weight_decay = 1e-6
         self.dataloader_batch_size = 64
         self.dropout = 0.1
         self.pad_token = 0
@@ -48,7 +48,7 @@ class FinnalConfig:
         self.target_loss__ = 0.0
         self.__vocab__, self.__reverse_vocab__, self.__vocab_list__ = load_vocab(os.path.join('..','data','data_aishell','preprocessed'))
         self.__transcript__ = load_transcript('../data/data_aishell/transcript/aishell_transcript_v0.8.txt')
-        self.criterion = nn.CrossEntropyLoss(ignore_index=self.pad_token)
+        self.__criterion__ = nn.CrossEntropyLoss(ignore_index=self.pad_token)
 
     def to_dict(self):
         return {k: v for k, v in self.__dict__.items() if not k.startswith('__')}

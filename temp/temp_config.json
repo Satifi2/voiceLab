@@ -1,0 +1,21 @@
+{
+    "seed": 42,
+    "model_name__": "transformer_conv_cross",
+    "mfcc_feature": 128,
+    "max_sentence_len": 31,
+    "max_mfcc_seqlen": 460,
+    "num_attention_heads": 8,
+    "model_dim": 512,
+    "num_layers": 12,
+    "ffn_hidden_dim": 8192,
+    "vocab_size": 4336,
+    "device": "cuda",
+    "learning_rate__": 1e-05,
+    "weight_decay": 1e-06,
+    "dataloader_batch_size": 64,
+    "dropout": 0.1,
+    "pad_token": 0,
+    "bos_token": 1,
+    "eos_token": 2,
+    "target_loss__": 0.0
+}

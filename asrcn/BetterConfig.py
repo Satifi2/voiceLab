@@ -8,7 +8,7 @@ def load_vocab(vocab_dir):
     with open(os.path.join(vocab_dir,'reverse_vocab.json'), 'r', encoding='utf-8') as f:
         reverse_vocab = json.load(f)
     vocab_list = [reverse_vocab[str(key)] for key in range(2000)]#临时更改1
-    print("vocab loaded")
+    print(f"{__name__}: vocab loaded")
     return vocab, reverse_vocab, vocab_list
 
 
@@ -21,7 +21,7 @@ def load_transcript(file_path):
                 key = parts[0]
                 value = ''.join(parts[1:])
                 transcript_dict[key] = value
-    print("transcript loaded")
+    print(f"{__name__}: transcript loaded")
     return transcript_dict
 
 
