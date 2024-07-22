@@ -13,7 +13,7 @@
     "beam_size": 3,
     "beam_cut_threshold": 0,
     "device": "cuda",
-    "learning_rate": 1e-07,
+    "learning_rate": 0.0001,
     "dataloader_batch_size": 100,
     "dropout": 0.1,
     "blank_token": 0,

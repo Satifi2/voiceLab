@@ -3,6 +3,7 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
 import utils
+from FinnalConfig import config
 
 class BetterDataset(Dataset):
     def __init__(self, npz_file):
@@ -15,21 +16,31 @@ class BetterDataset(Dataset):
         return len(self.source)
     
     def __getitem__(self, idx):
+        wav_filename= self.wav_filenames[idx]
+
         source = torch.tensor(self.source[idx], dtype=torch.float32)
-        source_invalid = torch.all(source==0, dim=1)
-        target = torch.tensor(self.target[idx], dtype=torch.long)[1:]
-        target_invalid = target==0
-        
-        return self.wav_filenames[idx], source, target, source_invalid, target_invalid
+        source_valid = torch.all(source!=config.pad_token, dim=1)
+        source_length = torch.sum(source_valid)
+
+        decoder_input = torch.tensor(self.target[idx])
+
+        target = torch.tensor(self.target[idx])[1:]
+        target = torch.cat([target, torch.tensor([config.pad_token])])
+        eos_index = (target == config.pad_token).nonzero(as_tuple=True)[0][0]
+        target[eos_index] = config.eos_token
+        target_valid = target != config.pad_token
+        target_length = torch.sum(target_valid)
+
+        return wav_filename, source, decoder_input, target, source_valid, target_valid, source_length, target_length
 
 def test_asr_dataset(dataloader):    
-    for wav_filenames, source, target, source_invalid, target_invalid in dataloader:
-        source_lengths, target_lengths = torch.sum(source_invalid == 0, dim=1), torch.sum(target_invalid == 0, dim=1)
+    for wav_filenames, source, decoder_input, target, source_valid, target_valid, source_lengths, target_lengths in dataloader:
         print("WAV Filenames:", wav_filenames[:3])
         print("Encoder Input:", source[0],source.shape)
+        print("decoder_input", decoder_input[0], decoder_input.shape)
         print("Decoder Input:", target[0],target.shape)
-        print("source_invalid:", source_invalid[0])
-        print("target_invalid:", target_invalid[0])
+        print("source_valid:", source_valid[0])
+        print("target_valid:", target_valid[0])
         print("source_lengths", source_lengths)
         print("target_lengths", target_lengths)
         break
