@@ -38,7 +38,7 @@ class ConvTransformerModel(nn.Module):
                         dropout=config.dropout, 
                         batch_first=True)
         self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=config.num_layers)
-        self.fc = nn.Linear(config.model_dim, config.vocab_size)
+        self.fc = nn.Linear(config.model_dim, 2000)#临时更改2
 
     def get_conv_out_lens(self, input_lengths):
         # This method remains the same

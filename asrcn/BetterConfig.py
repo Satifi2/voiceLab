@@ -7,7 +7,7 @@ def load_vocab(vocab_dir):
         vocab = json.load(f)
     with open(os.path.join(vocab_dir,'reverse_vocab.json'), 'r', encoding='utf-8') as f:
         reverse_vocab = json.load(f)
-    vocab_list = [reverse_vocab[str(key)] for key in reverse_vocab.keys()]
+    vocab_list = [reverse_vocab[str(key)] for key in range(2000)]#临时更改1
     print("vocab loaded")
     return vocab, reverse_vocab, vocab_list
 
@@ -41,7 +41,7 @@ class BetterConfig:
         self.beam_size = 3
         self.beam_cut_threshold = 0
         self.device = 'cuda'
-        self.learning_rate = 1e-6
+        self.learning_rate = 1e-7
         self.dataloader_batch_size = 100
         self.dropout = 0.1
         self.blank_token = 0
