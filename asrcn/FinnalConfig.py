@@ -35,7 +35,7 @@ class FinnalConfig:
         self.num_attention_heads = 8
         self.model_dim = 512
         self.num_layers = 12
-        self.ffn_hidden_dim = 8192
+        self.ffn_hidden_dim = 12288
         self.vocab_size = 4336
         self.device = 'cuda'
         self.learning_rate__ = 1e-5
