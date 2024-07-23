@@ -179,9 +179,9 @@ def train(model, num_epochs = 20):
 if __name__ == '__main__':
     utils.set_seed()
     model_save_dir = os.path.join('..', 'model','transformer_final')
-    model_save_path = os.path.join(model_save_dir,'transformer_asr_51_epoch_0.pth')
-    config_save_path = os.path.join(model_save_dir,"transformer_asr_51_config.json")
-    model= model_init()
+    model_save_path = os.path.join(model_save_dir,'transformer_equal_len_epoch_19.pth')
+    config_save_path = os.path.join(model_save_dir,"transformer_equal_len_config.json")
+    model= model_init(model_save_path, config_save_path)
 
     #test save
     save_dir = os.path.join('..','temp')

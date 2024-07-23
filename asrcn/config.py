@@ -18,6 +18,11 @@ class Config:
         self.eos_token = 2 
         self.target_loss = 0.0
 
+        self.__fbank_feature__ = 128
+        self.__melspec_feature__ = 128
+        self.__max_melspec_seqlen__ = 460
+        self.__max_fbank_seqlen__ = 460
+
     def to_dict(self):
         return {k: v for k, v in self.__dict__.items() if not k.startswith('__')}
 

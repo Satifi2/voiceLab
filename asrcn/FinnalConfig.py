@@ -28,7 +28,7 @@ def load_transcript(file_path):
 class FinnalConfig:
     def __init__(self):
         self.seed = 42
-        self.model_name__ = "transformer_equal_len"
+        self.model_name__ = "transformer_equal_len_d"
         self.mfcc_feature = 128
         self.max_sentence_len = 31
         self.max_mfcc_seqlen = 460
