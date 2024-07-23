@@ -28,18 +28,18 @@ def load_transcript(file_path):
 class FinnalConfig:
     def __init__(self):
         self.seed = 42
-        self.model_name__ = "transformer_conv_cross"
+        self.model_name__ = "transformer_equal_len"
         self.mfcc_feature = 128
         self.max_sentence_len = 31
         self.max_mfcc_seqlen = 460
         self.num_attention_heads = 8
         self.model_dim = 512
-        self.num_layers = 12
+        self.num_layers = 16
         self.ffn_hidden_dim = 12288
         self.vocab_size = 4336
         self.device = 'cuda'
         self.learning_rate__ = 1e-5
-        self.weight_decay = 1e-6
+        self.weight_decay = 1e-9
         self.dataloader_batch_size = 64
         self.dropout = 0.1
         self.pad_token = 0
