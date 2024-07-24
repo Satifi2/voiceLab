@@ -9,8 +9,8 @@ from torch.utils.data import DataLoader
 
 if __name__ == "__main__":
     model_save_dir = os.path.join('..', 'model', 'transformer_ctc')
-    model_save_path = os.path.join(model_save_dir, 'transformer_ctc_fix_epoch_0.pth')
-    config_save_path = os.path.join(model_save_dir, 'transformer_ctc_fix_config.json')
+    model_save_path = os.path.join(model_save_dir, 'transformer_ctc_big_epoch_0.pth')
+    config_save_path = os.path.join(model_save_dir, 'transformer_ctc_big_config.json')
 
     utils.load_config(config_save_path)
     print(f"The model {config.model_name} is loading")
@@ -33,7 +33,7 @@ if __name__ == "__main__":
     with open(reverse_vocab_path, 'r', encoding='utf-8') as f:
         reverse_vocab = json.load(f)
 
-    test_dir_path = os.path.join('..', 'data', 'data_aishell', 'dataset', 'train')
+    test_dir_path = os.path.join('..', 'data', 'data_aishell', 'dataset', 'test')
     npz_files = [os.path.join(test_dir_path, f) for f in os.listdir(test_dir_path) if f.endswith('.npz')]
 
     for npz_file in npz_files:
@@ -45,6 +45,6 @@ if __name__ == "__main__":
 
             predict_ids = model.predict(encoder_input)
             predict_words =  [[reverse_vocab[str(word_id)] for word_id in sentence] for sentence in predict_ids]
-            print(predict_words)
+            print(predict_words[0])
             break
         break

@@ -2,14 +2,16 @@ import torch.nn as nn
 import numpy as np
 import torch 
 import os
-from config import config
+from BetterConfig import config
 import json
 import random
+import inspect
 
 def set_seed():
     np.random.seed(config.seed)
     random.seed(config.seed)
     torch.manual_seed(config.seed)
+
 
 class PositionalEncoding(nn.Module):
     def __init__(self, max_len, d_model):
@@ -27,13 +29,14 @@ class PositionalEncoding(nn.Module):
         # print("pe.shape",self.pe.shape) #torch.Size([1, 460, 128])
         return x + self.pe[:,:x.shape[1],:]
 
+
 def test_position_encoding():
     d_model = 10
     max_len = 8
     pos_encoder = PositionalEncoding(max_len, d_model)
 
     batch_size = 2
-    x = torch.zeros(batch_size,max_len, d_model)
+    x = torch.zeros(batch_size,max_len, d_model).to(config.device)
 
     x_encoded = pos_encoder(x)
 
@@ -82,16 +85,24 @@ def save_model_and_config(model, epoch, model_name, save_dir=os.path.join('..','
     with open(config_save_path, 'w') as f:
         json.dump(config.to_dict(), f, indent=4)
     print(f"Configuration saved to {config_save_path}")
-
+    
 
 def load_config(config_path):
     with open(config_path, 'r') as f:
         config_data = json.load(f)
     
     for key, value in config_data.items():
-        setattr(config, key, value)
+        if not key.endswith('__'):
+            setattr(config, key, value)
+        if key == 'model__name__':
+            print(f"The configuration of {value} is loaded")
     
-    print("The configuration is loaded")
+
+
+def printf(parameter, comment='',detailed_level =1):
+    if detailed_level == config.__debugmode__ :
+        print(comment, parameter)
+
 
 def load_transcript(file_path):
     transcript_dict = {}
@@ -102,10 +113,40 @@ def load_transcript(file_path):
                 key = parts[0]
                 value = ''.join(parts[1:])
                 transcript_dict[key] = value
+    print("transcript loaded")
     return transcript_dict
 
+
+def model_parameters(model):
+    total_params = 0
+    for name, parameter in model.named_parameters():
+        if not parameter.requires_grad: continue
+        params = parameter.numel()
+        total_params += params
+    return total_params
+
+
+def create_padding_mask(lengths, max_len):
+    return torch.arange(max_len).to(config.device).expand(len(lengths), max_len) >= lengths.unsqueeze(1)
+
+
+def test_create_pad():
+    lengths = torch.tensor([3,2,1]).to(config.device)
+    print(create_padding_mask(lengths=lengths,max_len=5))
+
+
+def generate_square_subsequent_mask(sz):
+    mask = (torch.triu(torch.ones(sz, sz)) == 1).transpose(0, 1)
+    mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
+    return mask
+
+
+def create_custom_mask(seq_len):
+    mask = torch.triu(torch.ones(seq_len, seq_len), diagonal=1).bool().to(config.device)
+    return mask
 
 if __name__ == "__main__":
     test_position_encoding()
     test_pad_mask()
-
+    test_create_pad()
+    print(create_custom_mask(5))

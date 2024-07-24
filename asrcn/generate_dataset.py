@@ -11,12 +11,15 @@ import json
 import librosa
 import numpy as np
 from config import config
+import torchaudio
+
 
 def load_processed_transcripts():
     input_path = os.path.join('..', 'data', 'data_aishell', 'preprocessed', 'processed_transcripts.json')
     with open(input_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
     return data
+
 
 def extract_mfcc(wav_file):
     y, sr = librosa.load(wav_file, sr=None)
@@ -25,6 +28,34 @@ def extract_mfcc(wav_file):
         padding = np.zeros((config.max_mfcc_seqlen - mfcc.shape[0], config.mfcc_feature))
         mfcc = np.vstack((mfcc, padding))
     return mfcc
+
+
+def extract_fbank(wav_file):
+    waveform, sample_rate = torchaudio.load(wav_file)
+    fbank = torchaudio.compliance.kaldi.fbank(
+        waveform,
+        htk_compat=True,
+        sample_frequency=sample_rate,
+        use_energy=False,
+        window_type='hanning',
+        num_mel_bins=config.__fbank_feature__,
+        dither=0.0,
+        frame_shift=10
+    )
+    fbank = fbank.numpy()  
+    return fbank
+
+
+def extract_melspectrogram(wav_file):
+    waveform, sample_rate = torchaudio.load(wav_file)
+    mel_spectrogram = torchaudio.transforms.MelSpectrogram(
+        sample_rate=sample_rate,
+        n_fft=2048,
+        hop_length=512,
+        n_mels=config.__melspec_feature__
+    )(waveform)
+    return mel_spectrogram
+
 
 def process_audio_files(audio_dir, transcripts_dict):
     encoder_inputs = []
@@ -57,6 +88,7 @@ def process_audio_files(audio_dir, transcripts_dict):
 
     return wav_filenames, encoder_input_array, decoder_input_array, decoder_expected_output_array
 
+
 def process_all_folders(base_audio_dir, transcripts_dict, output_base_dir):
     if not os.path.exists(output_base_dir):
         os.makedirs(output_base_dir)
@@ -76,6 +108,13 @@ def process_all_folders(base_audio_dir, transcripts_dict, output_base_dir):
             print("encoder_input=",encoder_input_array.shape,"\ndecoder_input=",decoder_input_array.shape,"\ndecoder_expected_output=",decoder_expected_output_array.shape)
             print(f'{folder_path}中的wav文件特征被提取出,并被存储到了{output_file_path}')
 
+
+def test_extract_feature(wav_path):
+    print(extract_fbank(wav_path).shape)
+    print(extract_melspectrogram(wav_path).shape)
+    print(extract_mfcc(wav_path).shape)
+
+
 if __name__ == "__main__":
     transcripts_dict = load_processed_transcripts()
     print('BAC009S0002W0122', transcripts_dict['BAC009S0002W0122'])
@@ -90,6 +129,7 @@ if __name__ == "__main__":
     base_audio_dir = os.path.join('..', 'data', 'data_aishell', 'wav', 'test')
     output_base_dir = os.path.join('..', 'data', 'data_aishell', 'dataset', 'test')
 
+    test_extract_feature(os.path.join(base_audio_dir,'S0764','BAC009S0764W0121.wav'))
     # process_audio_files(os.path.join(base_audio_dir,'S0002'), transcripts_dict)
     process_all_folders(base_audio_dir,transcripts_dict,output_base_dir)
 

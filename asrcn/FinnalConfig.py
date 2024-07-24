@@ -1,13 +1,13 @@
 import os
 import json
-
+import torch.nn as nn
 
 def load_vocab(vocab_dir):
     with open(os.path.join(vocab_dir,'vocab.json'), 'r', encoding='utf-8') as f:
         vocab = json.load(f)
     with open(os.path.join(vocab_dir,'reverse_vocab.json'), 'r', encoding='utf-8') as f:
         reverse_vocab = json.load(f)
-    vocab_list = [reverse_vocab[str(key)] for key in range(2000)]#临时更改1
+    vocab_list = [reverse_vocab[str(key)] for key in reverse_vocab.keys()]
     print(f"{__name__}: vocab loaded")
     return vocab, reverse_vocab, vocab_list
 
@@ -25,37 +25,35 @@ def load_transcript(file_path):
     return transcript_dict
 
 
-class BetterConfig:
+class FinnalConfig:
     def __init__(self):
         self.seed = 42
-        self.model_name = "transformer_ctc_conv"
+        self.model_name__ = "transformer_equal_len_d"
         self.mfcc_feature = 128
-        self.max_sentence_len = 30
+        self.max_sentence_len = 31
         self.max_mfcc_seqlen = 460
         self.num_attention_heads = 8
-        self.encoder_hidden_dim = 512
-        self.model_dim = 2048
-        self.num_layers = 4
-        self.ffn_hidden_dim = 8192*2
+        self.model_dim = 512
+        self.num_layers = 16
+        self.ffn_hidden_dim = 12288
         self.vocab_size = 4336
-        self.beam_size = 3
-        self.beam_cut_threshold = 0
         self.device = 'cuda'
-        self.learning_rate = 1e-7
-        self.dataloader_batch_size = 100
+        self.learning_rate__ = 1e-5
+        self.weight_decay = 1e-9
+        self.dataloader_batch_size = 64
         self.dropout = 0.1
-        self.blank_token = 0
+        self.pad_token = 0
         self.bos_token = 1
         self.eos_token = 2 
-        self.target_loss = 0.0
+        self.target_loss__ = 0.0
         self.__vocab__, self.__reverse_vocab__, self.__vocab_list__ = load_vocab(os.path.join('..','data','data_aishell','preprocessed'))
         self.__transcript__ = load_transcript('../data/data_aishell/transcript/aishell_transcript_v0.8.txt')
-        self.__debugmode__ = -1
+        self.__criterion__ = nn.CrossEntropyLoss(ignore_index=self.pad_token)
 
     def to_dict(self):
         return {k: v for k, v in self.__dict__.items() if not k.startswith('__')}
 
-config = BetterConfig()
+config = FinnalConfig()
 
 def test_load_vocab():
     print("vocab", config.__vocab__)
