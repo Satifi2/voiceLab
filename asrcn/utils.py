@@ -141,8 +141,12 @@ def generate_square_subsequent_mask(sz):
     return mask
 
 
+def create_custom_mask(seq_len):
+    mask = torch.triu(torch.ones(seq_len, seq_len), diagonal=1).bool().to(config.device)
+    return mask
+
 if __name__ == "__main__":
     test_position_encoding()
     test_pad_mask()
     test_create_pad()
-
+    print(create_custom_mask(5))

@@ -72,32 +72,32 @@ class ConvTransformerCross(nn.Module):
         output = self.fc_out(transformer_output)
         return output
         
-    def predict(self, encoder_input, decoder_input, reverse_vocab):
-        batch_size = encoder_input.size(0)
-        device = encoder_input.device
-        decoder_input = torch.full((batch_size, 1), config.bos_token, dtype=torch.long, device=device)
-        predicted_indices = []
-        for _ in range(config.max_sentence_len):
-            with torch.no_grad():
-                output = self.forward(encoder_input, decoder_input)
-            next_word = output[:, -1, :].argmax(dim=-1).unsqueeze(1)
-            # print(encoder_input.shape,decoder_input.shape,output.shape,next_word.shape)
-            decoder_input = torch.cat([decoder_input, next_word], dim=-1)
-            predicted_indices.append(next_word)
-            # print(predicted_indices)
+    def predict(self, source, source_lengths):
+        batch_size = source.size(0)
+        target_length = 1
+        target = torch.full((batch_size, 1), config.bos_token, dtype=torch.long, device=config.device)
+        target_lengths = torch.ones(batch_size, dtype=torch.long, device=config.device)
+        predicted_words = [[] for _ in range(batch_size)]
 
-        predicted_indices = torch.cat(predicted_indices, dim=-1)
-        # print(predicted_indices.shape)
-        # print(predicted_indices)
+        while target_length < config.max_sentence_len:
+            output = self.forward(source, target, source_lengths, target_lengths)
+            next_word_probs = output[:, -1, :]
+            next_word_indices = torch.argmax(next_word_probs, dim=-1)
 
-        predicted_words = []
+            for i in range(batch_size):
+                if predicted_words[i][-1] != config.eos_token:
+                    predicted_words[i].append(next_word_indices[i].item())
+                    target_lengths[i] += 1
+
+            target = torch.cat([target, next_word_indices.unsqueeze(1)], dim=1)
+            target_length += 1
+
+        predicted_sentences = []
         for i in range(batch_size):
-            words = []
-            for idx in predicted_indices[i]:
-                if idx != config.pad_token:
-                    words.append(reverse_vocab[str(idx.item())])
-            predicted_words.append(words)
-        return predicted_indices, predicted_words
+            sentence = [config.__reverse_vocab__[str(idx)] for idx in predicted_words[i] if idx != config.eos_token]
+            predicted_sentences.append(sentence)
+
+        return predicted_sentences
     
 
     def get_conv_out_lens(self, input_lengths):
@@ -113,15 +113,16 @@ class ConvTransformerCross(nn.Module):
         return seq_lens.int()
     
 
-    def predict(self, output):
+    def predict(self, source, decoder_input, source_lengths, target_lengths):
         with torch.no_grad():
+            output = self.forward(source, decoder_input, source_lengths, target_lengths)
             predicted_indices = torch.argmax(output, dim=-1)
             batch_size, seq_len = predicted_indices.size()
             predicted_words = []
             for i in range(batch_size):
                 predicted_words.append([config.__reverse_vocab__[str(idx.item())] for idx in predicted_indices[i] if idx != config.pad_token])
 
-            print(predicted_indices[:2], predicted_words[:2])
+            # print(predicted_indices[:2], predicted_words[:2])
             return predicted_indices, predicted_words
 
 
@@ -167,7 +168,7 @@ def train(model, num_epochs = 20):
                 total_loss += loss.item()
                 dataset_loss += loss.item()
                 if idx == 0:
-                    model.predict(output)
+                    model.predict(source, decoder_input, source_lengths,target_lengths)
             print(f"Epoch {epoch + 1},file:{npz_file},Total Loss: {total_loss / len(npz_files)}, dataset Loss {dataset_loss}")
             if dataset_loss < config.target_loss__:
                 Utils.save_model(model, config.model_name__, epoch, model_save_dir)
