@@ -46,7 +46,7 @@ def test_dataset(dataloader):
         print("WAV Filenames:", wav_filenames[:3])
         print("Encoder Input:", source[0],source.shape)
         print("decoder_input", decoder_input[0], decoder_input.shape)
-        print("Decoder Input:", target[0],target.shape)
+        print("target:", target[0],target.shape)
         print("source_invalid:", source_invalid[0])
         print("source_lengths to source mask",create_padding_mask(source_lengths, source.shape[1])[0])
         print("target_invalid:", target_invalid[0])

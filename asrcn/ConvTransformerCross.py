@@ -53,6 +53,7 @@ class ConvTransformerCross(nn.Module):
         input = self.conv(source)
         input = input.transpose(1, 2)
         input_lengths = self.get_conv_out_lens(source_lengths)
+        print("get_conv_out_lens", input_lengths)
 
         input = self.encoder_pos(input)
         decoder_input = self.decoder_embedding(decoder_input)
@@ -72,32 +73,20 @@ class ConvTransformerCross(nn.Module):
         output = self.fc_out(transformer_output)
         return output
         
-    def predict(self, encoder_input, decoder_input, reverse_vocab):
-        batch_size = encoder_input.size(0)
-        device = encoder_input.device
-        decoder_input = torch.full((batch_size, 1), config.bos_token, dtype=torch.long, device=device)
-        predicted_indices = []
-        for _ in range(config.max_sentence_len):
-            with torch.no_grad():
-                output = self.forward(encoder_input, decoder_input)
-            next_word = output[:, -1, :].argmax(dim=-1).unsqueeze(1)
-            # print(encoder_input.shape,decoder_input.shape,output.shape,next_word.shape)
-            decoder_input = torch.cat([decoder_input, next_word], dim=-1)
-            predicted_indices.append(next_word)
-            # print(predicted_indices)
-
-        predicted_indices = torch.cat(predicted_indices, dim=-1)
-        # print(predicted_indices.shape)
-        # print(predicted_indices)
-
-        predicted_words = []
-        for i in range(batch_size):
-            words = []
-            for idx in predicted_indices[i]:
-                if idx != config.pad_token:
-                    words.append(reverse_vocab[str(idx.item())])
-            predicted_words.append(words)
-        return predicted_indices, predicted_words
+    def predict_auto_regression(self, sources, source_lengths):
+        for sample_idx in range(config.dataloader_batch_size):
+            source, source_length = sources[sample_idx], source_lengths[sample_idx]
+            decoder_input, target_length = torch.tensor([   1, 2223,  405,  758,  282,  434,   66,  295, 1926,  706,  139, 1039,
+         152,   15,  257,  401,   32,   0,   0,    0,    0,    0,    0,    0,
+           0,    0,    0,    0,    0,    0,    0]).to(config.device), torch.tensor([17], dtype=torch.long).to(config.device)
+            print("source",source.shape,source[0])
+            print("source_length", source_length)
+            print("decoder_input", decoder_input)
+            print("target_length", target_length)
+            output = self.forward(source.unsqueeze(0), decoder_input.unsqueeze(0), source_length.unsqueeze(0), target_length).squeeze(0)
+            print("output", output.shape, output[0])
+            print(torch.argmax(output,dim=1))
+            break
     
 
     def get_conv_out_lens(self, input_lengths):
@@ -121,7 +110,7 @@ class ConvTransformerCross(nn.Module):
             for i in range(batch_size):
                 predicted_words.append([config.__reverse_vocab__[str(idx.item())] for idx in predicted_indices[i] if idx != config.pad_token])
 
-            print(predicted_indices[:2], predicted_words[:2])
+            # print(predicted_indices[:2], predicted_words[:2])
             return predicted_indices, predicted_words
 
 
