@@ -1,6 +1,6 @@
 {
     "seed": 42,
-    "model_name__": "transformer_tired",
+    "model_name__": "transformer_destiny",
     "mfcc_feature": 128,
     "max_sentence_len": 31,
     "max_mfcc_seqlen": 460,
